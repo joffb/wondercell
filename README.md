@@ -2,7 +2,9 @@
 FreeCell for Wonderswan using Wonderful Toolchain
 
 Built using Asie's [Wonderful Toolchain](https://github.com/WonderfulToolchain/wonderful-i8086)
+
 Graphics drawn in Aseprite
+
 Tilemaps for menu and title screen in [Tilemap Studio](https://github.com/Rangi42/tilemap-studio)
 
 Controls:
