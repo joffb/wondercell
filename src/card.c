@@ -2,10 +2,10 @@
 // Joe Kennedy - 2023
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <ws.h>
 #include "card.h"
 #include "draw.h"
-#include "rand.h"
 
 const uint8_t __far cursor_area_tx[] = { 1, 15, 2};
 const uint8_t __far cursor_area_ty[] = { 0, 0,  5};

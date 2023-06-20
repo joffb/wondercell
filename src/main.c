@@ -4,8 +4,8 @@
 #include <wonderful.h>
 #include <ws.h>
 #include <stdint.h>
+#include <stdlib.h>
 
-#include "rand.h"
 #include "card.h"
 #include "draw.h"
 
@@ -20,6 +20,8 @@ enum game_states {
 }; 
 
 uint8_t tics;
+
+uint16_t rnd_val;
 
 uint16_t keypad;
 uint16_t keypad_pushed;
@@ -46,8 +48,8 @@ void enable_interrupts()
 	// acknowledge interrupt
 	outportb(IO_HWINT_ACK, 0xFF);
 
-	// set interrupt handler (see vblank_handler.s) which only acknowledges the interrupt
-	ws_hwint_set_handler(HWINT_IDX_VBLANK, (ws_int_handler_t) vblank_int_handler);
+	// set interrupt handler which only acknowledges the vblank interrupt
+	ws_hwint_set_default_handler_vblank();
 
 	// enable wonderswan vblank interrupt
 	ws_hwint_enable(HWINT_VBLANK);
@@ -61,6 +63,7 @@ void new_game()
 	// keep the random seed which this game uses around
 	// for the restart game function
 	game_seed = rnd_val;
+	srand(rnd_val);
 
 	// clear card tiles and redraw backgrounds
 	clear_card_layer();
@@ -113,7 +116,7 @@ void main()
 	disable_interrupts();
 
 	// initial random seed
-	rnd_val = 0x5318;
+	rnd_val = 0;
 
 	// current and last keypad status
 	keypad = 0;
@@ -149,13 +152,7 @@ void main()
 		keypad_pushed = ((keypad ^ keypad_last) & keypad);
 
 		// increment the random number seed every frame
-		// and make sure it isn't 0 (would cause trouble with the rand function)
 		rnd_val++;
-
-		if (rnd_val == 0)
-		{
-			rnd_val = 1;
-		}
 
 		// title screen
 		if (game_state == GAME_TITLE)

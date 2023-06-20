@@ -37,81 +37,31 @@ void init_video()
 
 void copy_title_screen_gfx()
 {
-    uint16_t index;
-	uint8_t __far * tile_gfx = (uint8_t __far * ) &title_screen_gfx;
-
-	// copy title screen graphics to vram
-	for (index = 0; index < 0xe0 * TILE_4BPP_LENGTH; index++)
-	{
-		MEM_TILE_4BPP(0)[index] = tile_gfx[index];
-	}
+    ws_dma_copy_words(MEM_TILE_4BPP(0), &title_screen_gfx, 0xe0 * TILE_4BPP_LENGTH);
 }
 
 void copy_text_gfx()
 {
-    uint16_t index;
-	uint8_t __far * tile_gfx = (uint8_t __far * ) &text_gfx;
-
-	// copy card graphics to vram
-	for (index = 0; index < 64 * TILE_4BPP_LENGTH; index++)
-	{
-		MEM_TILE_4BPP(0)[index + (160 * TILE_4BPP_LENGTH)] = tile_gfx[index];
-	}
+    ws_dma_copy_words(MEM_TILE_4BPP(160), &text_gfx, 64 * TILE_4BPP_LENGTH);
 }
 
 void copy_card_tile_gfx()
 {
-    uint16_t index;
-	uint8_t __far * tile_gfx = (uint8_t __far * ) &card_gfx;
-
-	// copy card graphics to vram
-	for (index = 0; index < 160 * TILE_4BPP_LENGTH; index++)
-	{
-		MEM_TILE_4BPP(0)[index] = tile_gfx[index];
-	}
+    ws_dma_copy_words(MEM_TILE_4BPP(0), &card_gfx, 160 * TILE_4BPP_LENGTH);
 }
 
 void copy_you_win_gfx()
 {
-    uint16_t index;
-	uint8_t __far * tile_gfx = (uint8_t __far * ) &you_win_gfx;
-
-	// copy card graphics to vram
-	for (index = 0; index < 32 * TILE_4BPP_LENGTH; index++)
-	{
-		MEM_TILE_4BPP(0)[index + (YOU_WIN_TILES * TILE_4BPP_LENGTH)] = tile_gfx[index];
-	}
+    ws_dma_copy_words(MEM_TILE_4BPP(YOU_WIN_TILES), &you_win_gfx, 32 * TILE_4BPP_LENGTH);
 }
 
 
 // copy palettes to vram
 void copy_palettes()
 {	
-    uint8_t i;
-	uint16_t __far * tile_palette = (uint16_t __far * ) &card_gfx_palette;
-	uint16_t * palette = MEM_COLOR_PALETTE(0);
-
-	// init palette
-	for (i = 0; i < 16; i++)
-	{
-		palette[i] = tile_palette[i];
-	}
-
-	palette = MEM_COLOR_PALETTE(4);
-
-	// init palette
-	for (i = 0; i < 16; i++)
-	{
-		palette[i] = tile_palette[i];
-	}
-
-	palette = MEM_COLOR_PALETTE(8);
-
-	// init palette
-	for (i = 0; i < 16; i++)
-	{
-		palette[i] = tile_palette[i];
-	}
+    ws_dma_copy_words(MEM_COLOR_PALETTE(0), &card_gfx_palette, 32);
+    ws_dma_copy_words(MEM_COLOR_PALETTE(4), &card_gfx_palette, 32);
+    ws_dma_copy_words(MEM_COLOR_PALETTE(8), &card_gfx_palette, 32);
 }
 
 void clear_card_layer()
@@ -120,8 +70,10 @@ void clear_card_layer()
 
 	for (index = 0; index < SCR_WIDTH * SCR_HEIGHT; index++)
 	{
-		SCREEN2[index].tile = 0;
-	}
+        SCREEN2[index].tile = 0;
+    }
+
+    //ws_screen_fill_tiles(SCREEN2, 0, 0, 0, SCR_WIDTH, SCR_HEIGHT);
 }
 
 // draw the green baize background onto screen 1
