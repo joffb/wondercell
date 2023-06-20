@@ -1,0 +1,22 @@
+[cartridge]
+publisher_id = 0x00
+game_id = 0
+game_version = 0
+
+save_type = "NONE"
+color = false
+rtc = false
+vertical = false
+
+# mapper = "2003"
+# rom_speed = 1
+# rom_bus_width = 16
+
+[memory.layout]
+irq_vectors = [ 0x0000, 0x003F ]
+c_heap = [ 0x0040, 0x0DBF ]
+wave = [ 0x0DC0, 0x0DFF ]
+screen1 = [ 0x1000, 0x17FF ]
+screen2 = [ 0x1800, 0x1FFF ]
+screen2_page2 = [ 0x2000, 0x27FF ]
+sprites = [ 0x3E00, 0x3FFF ]
