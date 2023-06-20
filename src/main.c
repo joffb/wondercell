@@ -433,7 +433,11 @@ void main()
 				game_state = GAME_MENU;
 			}
 
-			draw_cursor();
+			// update cursor position if the state is still ingame
+			if (game_state == GAME_INGAME)
+			{
+				draw_cursor();
+			}
 		}
 
 		keypad_last = keypad;

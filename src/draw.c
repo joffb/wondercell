@@ -161,6 +161,7 @@ void set_up_you_win_sprites()
 
     // disable screen2 to hide cards
     outportw(IO_DISPLAY_CTRL, DISPLAY_SCR1_ENABLE | DISPLAY_SPR_ENABLE);
+    outportb(IO_SPR_FIRST, 0);
     outportb(IO_SPR_COUNT, 32);
 
     // 8x4 tiles image
