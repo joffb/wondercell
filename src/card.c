@@ -7,15 +7,42 @@
 #include "card.h"
 #include "draw.h"
 
-const uint8_t __far cursor_area_tx[] = { 1, 15, 2};
-const uint8_t __far cursor_area_ty[] = { 0, 0,  5};
+uint8_t cursor_area;
+uint8_t cursor_x;
+uint8_t cursor_y;
 
-const char* __far value_names[13] = {
+uint8_t card_in_hand;
+uint8_t card_in_hand_area;
+uint8_t card_in_hand_x;
+uint8_t card_in_hand_y;
+
+ws_sprite_t card_in_hand_tiles[32];
+uint8_t card_in_hand_tiles_count;
+
+uint8_t cards[52];
+uint8_t card_used[52];
+
+uint8_t freecells[FREECELLS][1];
+uint8_t freecell_counts[FREECELLS];
+
+uint8_t foundations[FOUNDATIONS][16];
+uint8_t foundation_counts[FOUNDATIONS];
+
+uint8_t deck[52];
+uint8_t deck_count;
+
+uint8_t cascades[CASCADES][32];
+uint8_t cascade_counts[CASCADES];
+
+const uint8_t __wf_rom cursor_area_tx[] = { 1, 15, 2};
+const uint8_t __wf_rom cursor_area_ty[] = { 0, 0,  5};
+
+const char* __wf_rom value_names[13] = {
     "A", "2", "3", "4", "5", "6", "7",
     "8", "9", "10", "J", "Q", "K"
 };
 
-const char* __far suit_names[4] = {
+const char* __wf_rom suit_names[4] = {
     "Hearts", "Clubs", "Diamonds", "Spades"
 };
 

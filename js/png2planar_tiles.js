@@ -24,9 +24,10 @@ let bitmasks = [0x1, 0x2, 0x4, 0x8];
 let h_out = fs.openSync("include\\" + prefix + ".h", "w");
 
 fs.writeSync(h_out, "#include <stdint.h>\n");
+fs.writeSync(h_out, "#include <wonderful.h>\n");
 fs.writeSync(h_out, "#pragma once\n\n");
-fs.writeSync(h_out, "extern const uint8_t __far " + prefix + "[];\n");
-fs.writeSync(h_out, "extern const uint16_t __far " + prefix + "_palette[];\n");
+fs.writeSync(h_out, "extern const uint8_t __wf_rom " + prefix + "[];\n");
+fs.writeSync(h_out, "extern const uint16_t __wf_rom " + prefix + "_palette[];\n");
 
 fs.closeSync(h_out);
 
@@ -34,7 +35,7 @@ fs.closeSync(h_out);
 let out = fs.openSync("src\\" +  prefix + ".c", "w");
 
 fs.writeSync(out, "#include \"" + prefix + ".h\"\n");
-fs.writeSync(out, "const uint8_t __far " + prefix + "[] = { \n");
+fs.writeSync(out, "const uint8_t __wf_rom " + prefix + "[] = { \n");
 
 // tiles y
 for (var ty = 0; ty < png.height / 8; ty++)
@@ -95,7 +96,7 @@ for (var ty = 0; ty < png.height / 8; ty++)
 fs.writeSync(out, "};\n\n");
 
 // palette entries
-fs.writeSync(out, "const uint16_t __far " + prefix + "_palette[] = { \n");
+fs.writeSync(out, "const uint16_t __wf_rom " + prefix + "_palette[] = { \n");
 
 png.palette.forEach(function (val) {
 	var colour_12 = ((val[0] >> 4) << 8) | 
