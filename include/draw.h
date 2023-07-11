@@ -2,17 +2,18 @@
 // Joe Kennedy - 2023
 
 #pragma once
+#include <wonderful.h>
 
 #define YOU_WIN_TILES 0xE0
 
-#define SCREEN1 ((ws_scr_entry_t *) 0x1000)
-#define SCREEN2 ((ws_scr_entry_t *) 0x1800)
-#define SCREEN2_PAGE_2 ((ws_scr_entry_t *) 0x2000)
+#define SCREEN_1 ((ws_scr_entry_t __wf_iram*) 0x1000)
+#define SCREEN_2 ((ws_scr_entry_t __wf_iram*) 0x1800)
+#define SCREEN_2_PAGE_2 ((ws_scr_entry_t __wf_iram*) 0x2000)
 
-#define SPRITES ((ws_sprite_t *) 0x3e00)
+#define SPRITES ((ws_sprite_t __wf_iram*) 0x3e00)
 
-extern unsigned char menu_tilemap_tilemap[];
-extern unsigned char title_screen_tilemap_tilemap[];
+extern const unsigned char __wf_rom menu_tilemap_tilemap[];
+extern const unsigned char __wf_rom title_screen_tilemap_tilemap[];
 
 void init_video();
 

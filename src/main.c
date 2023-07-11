@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifdef __WONDERFUL_WWITCH__
+#include <sys/bios.h>
+#endif
+
 #include "card.h"
 #include "draw.h"
 
@@ -36,15 +40,18 @@ uint8_t deal_x, deal_y;
 
 void disable_interrupts()
 {
+#ifndef __WONDERFUL_WWITCH__
 	// disable cpu interrupts
 	cpu_irq_disable();
 
 	// disable wonderswan hardware interrupts
 	ws_hwint_disable_all();
+#endif
 }
 
 void enable_interrupts()
 {
+#ifndef __WONDERFUL_WWITCH__
 	// acknowledge interrupt
 	outportb(IO_HWINT_ACK, 0xFF);
 
@@ -56,6 +63,7 @@ void enable_interrupts()
 	
 	// enable cpu interrupts
 	cpu_irq_enable();
+#endif
 }
 
 void new_game()
@@ -85,7 +93,7 @@ void new_game()
 	outportw(IO_DISPLAY_CTRL, DISPLAY_SCR1_ENABLE | DISPLAY_SCR2_ENABLE | DISPLAY_SPR_ENABLE);
 
 	//
-	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN1) | SCR2_BASE(SCREEN2));
+	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2));
 
 	// default cursor to first cascade
 	cursor_area = AREA_CASCADES;
@@ -143,13 +151,22 @@ void main()
 		// halt cpu
 		// the program will sit here until the vblank interrupt
 		// is triggered and unhalts it
+#ifdef __WONDERFUL_WWITCH__
+		sys_wait(1);
+#else
 		cpu_halt();
+#endif
 
 		// get keypad state and from the last keypad state
 		// determine if a key has been pressed this frame 
 		// which wasn't pressed last frame
+#ifdef __WONDERFUL_WWITCH__
+		keypad = key_press_check();
+		keypad_pushed = key_hit_check();
+#else
 		keypad = ws_keypad_scan();
 		keypad_pushed = ((keypad ^ keypad_last) & keypad);
+#endif
 
 		// increment the random number seed every frame
 		rnd_val++;
@@ -259,7 +276,7 @@ void main()
 				if (menu_cursor == 2)
 				{
 					// change screen2 base address back to the card screen map
-					outportb(IO_SCR_BASE, SCR1_BASE(SCREEN1) | SCR2_BASE(SCREEN2));
+					outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2));
 
 					game_state = GAME_INGAME;
 				}
@@ -285,7 +302,7 @@ void main()
 			else if ((keypad_pushed & KEY_START) || (keypad_pushed & KEY_B))
 			{
 				// change screen2 base address to the card screen map
-				outportb(IO_SCR_BASE, SCR1_BASE(SCREEN1) | SCR2_BASE(SCREEN2));
+				outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2));
 
 				game_state = GAME_INGAME;
 			}
@@ -427,7 +444,7 @@ void main()
 			{
 				// change screen2 base address to the menu screen map
 				outportb(IO_SPR_COUNT, 2);
-				outportb(IO_SCR_BASE, SCR1_BASE(SCREEN1) | SCR2_BASE(SCREEN2_PAGE_2));
+				outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2_PAGE_2));
 
 				menu_cursor = 0;
 				game_state = GAME_MENU;

@@ -2,6 +2,7 @@
 // Joe Kennedy - 2023
 
 #include <stdint.h>
+#include <string.h>
 #include <ws.h>
 #include "draw.h"
 #include "card.h"
@@ -16,7 +17,7 @@ void init_video()
 	ws_mode_set(WS_MODE_COLOR_4BPP);
 
 	// set base addresses for screens 1 and 2
-	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN1) | SCR2_BASE(SCREEN2));
+	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2));
 
 	// reset scroll registers to 0
 	outportb(IO_SCR1_SCRL_X, 0);
@@ -66,14 +67,8 @@ void copy_palettes()
 
 void clear_card_layer()
 {
-    uint16_t index;
-
-	for (index = 0; index < SCR_WIDTH * SCR_HEIGHT; index++)
-	{
-        SCREEN2[index].tile = 0;
-    }
-
-    //ws_screen_fill_tiles(SCREEN2, 0, 0, 0, SCR_WIDTH, SCR_HEIGHT);
+    // Cast necessary for wwitch target
+    ws_screen_fill_tiles(FP_OFF(SCREEN_2), 0, 0, 0, SCR_WIDTH, SCR_HEIGHT);
 }
 
 // draw the green baize background onto screen 1
@@ -83,11 +78,11 @@ void draw_baize()
 
 	for (index = 0; index < SCR_WIDTH * SCR_HEIGHT; index++)
 	{
-		SCREEN1[index].tile = 0x8 + (index & 0x1) + ((index >> 4) & 0x2);
-        SCREEN1[index].palette = 0;
-        SCREEN1[index].bank = 0;
-        SCREEN1[index].flip_h = 0;
-        SCREEN1[index].flip_v = 0;
+		SCREEN_1[index].tile = 0x8 + (index & 0x1) + ((index >> 4) & 0x2);
+        SCREEN_1[index].palette = 0;
+        SCREEN_1[index].bank = 0;
+        SCREEN_1[index].flip_h = 0;
+        SCREEN_1[index].flip_v = 0;
 	}
 }
 
@@ -119,7 +114,7 @@ void draw_empty_foundations()
 
 		// draw suit icon for each foundations
 		index = (tx + 1) + ((ty + 1) << 5);
-		SCREEN1[index].tile = 0x58 + i;
+		SCREEN_1[index].tile = 0x58 + i;
 	}
 }
 
@@ -132,9 +127,11 @@ void draw_title_screen()
     {
         for (i = 0; i < DISPLAY_WIDTH; i++)
         {
-            SCREEN1[index].tile = title_screen_tilemap_tilemap[i + (DISPLAY_WIDTH * j)];
-            SCREEN1[index].flip_h = 0;
-            SCREEN1[index].flip_v = 0;
+            SCREEN_1[index].tile = title_screen_tilemap_tilemap[i + (DISPLAY_WIDTH * j)];
+            SCREEN_1[index].palette = 0;
+            SCREEN_1[index].bank = 0;
+            SCREEN_1[index].flip_h = 0;
+            SCREEN_1[index].flip_v = 0;
 
             index++;
         }
@@ -150,7 +147,7 @@ void draw_menu()
 
 	for (i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i++)
 	{
-        SCREEN2_PAGE_2[i].tile = menu_tilemap_tilemap[i];
+        SCREEN_2_PAGE_2[i].tile = menu_tilemap_tilemap[i];
     }
 }
 
@@ -217,23 +214,23 @@ void copy_card_tiles_to_sprites(uint8_t x, uint8_t y)
 
 	for (i = 0; i < 4; i++)
 	{
-		card_in_hand_tiles[dest_offset].tile = SCREEN2[source_offset].tile;
-        card_in_hand_tiles[dest_offset].flip_h = SCREEN2[source_offset].flip_h;
-        card_in_hand_tiles[dest_offset].flip_v = SCREEN2[source_offset].flip_v;
+		card_in_hand_tiles[dest_offset].tile = SCREEN_2[source_offset].tile;
+        card_in_hand_tiles[dest_offset].flip_h = SCREEN_2[source_offset].flip_h;
+        card_in_hand_tiles[dest_offset].flip_v = SCREEN_2[source_offset].flip_v;
         card_in_hand_tiles[dest_offset].priority = 1;
 		dest_offset++;
 		source_offset++;
 
-		card_in_hand_tiles[dest_offset].tile = SCREEN2[source_offset].tile;
-        card_in_hand_tiles[dest_offset].flip_h = SCREEN2[source_offset].flip_h;
-        card_in_hand_tiles[dest_offset].flip_v = SCREEN2[source_offset].flip_v;
+		card_in_hand_tiles[dest_offset].tile = SCREEN_2[source_offset].tile;
+        card_in_hand_tiles[dest_offset].flip_h = SCREEN_2[source_offset].flip_h;
+        card_in_hand_tiles[dest_offset].flip_v = SCREEN_2[source_offset].flip_v;
         card_in_hand_tiles[dest_offset].priority = 1;
 		dest_offset++;
 		source_offset++;
 
-		card_in_hand_tiles[dest_offset].tile = SCREEN2[source_offset].tile;
-        card_in_hand_tiles[dest_offset].flip_h = SCREEN2[source_offset].flip_h;
-        card_in_hand_tiles[dest_offset].flip_v = SCREEN2[source_offset].flip_v;
+		card_in_hand_tiles[dest_offset].tile = SCREEN_2[source_offset].tile;
+        card_in_hand_tiles[dest_offset].flip_h = SCREEN_2[source_offset].flip_h;
+        card_in_hand_tiles[dest_offset].flip_v = SCREEN_2[source_offset].flip_v;
         card_in_hand_tiles[dest_offset].priority = 1;
 		dest_offset++;
 		source_offset++;
@@ -251,9 +248,9 @@ void clear_card_tiles(uint8_t x, uint8_t y)
 	// body of card
 	for (i = 0; i < 4; i++)
 	{
-		SCREEN2[offset].tile = 0;
-		SCREEN2[offset + 1].tile = 0;
-		SCREEN2[offset + 2].tile = 0;
+		SCREEN_2[offset].tile = 0;
+		SCREEN_2[offset + 1].tile = 0;
+		SCREEN_2[offset + 2].tile = 0;
 		offset += SCR_WIDTH;
 	}
 }
@@ -269,20 +266,20 @@ void draw_card_tiles(uint8_t card, uint8_t x, uint8_t y, uint8_t full_card)
 	uint16_t offset = x + (y * SCR_WIDTH);
 
 	// top row
-	SCREEN2[offset].tile = 0x54;
-    SCREEN2[offset].flip_h = 0;
-    SCREEN2[offset].flip_v = 0;
-    SCREEN2[offset].palette = 4;
+	SCREEN_2[offset].tile = 0x54;
+    SCREEN_2[offset].flip_h = 0;
+    SCREEN_2[offset].flip_v = 0;
+    SCREEN_2[offset].palette = 4;
 
-    SCREEN2[offset + 1].tile = 0x50 + suit;
-    SCREEN2[offset + 1].flip_h = 0;
-    SCREEN2[offset + 1].flip_v = 0;
-    SCREEN2[offset + 1].palette = 4;
+    SCREEN_2[offset + 1].tile = 0x50 + suit;
+    SCREEN_2[offset + 1].flip_h = 0;
+    SCREEN_2[offset + 1].flip_v = 0;
+    SCREEN_2[offset + 1].palette = 4;
 
-	SCREEN2[offset + 2].tile = 0x60 + value;
-    SCREEN2[offset + 2].flip_h = 0;
-    SCREEN2[offset + 2].flip_v = 0;
-    SCREEN2[offset + 2].palette = 4;
+	SCREEN_2[offset + 2].tile = 0x60 + value;
+    SCREEN_2[offset + 2].flip_h = 0;
+    SCREEN_2[offset + 2].flip_v = 0;
+    SCREEN_2[offset + 2].palette = 4;
 
 	offset += SCR_WIDTH;
 
@@ -304,42 +301,42 @@ void draw_card_tiles(uint8_t card, uint8_t x, uint8_t y, uint8_t full_card)
 		// body of card
 		for (i = 0; i < 2; i++)
 		{
-			SCREEN2[offset].tile = card_body;
-            SCREEN2[offset].flip_h = 0;
-            SCREEN2[offset].flip_v = 0;
-            SCREEN2[offset].palette = 4;
+			SCREEN_2[offset].tile = card_body;
+            SCREEN_2[offset].flip_h = 0;
+            SCREEN_2[offset].flip_v = 0;
+            SCREEN_2[offset].palette = 4;
 			card_body++;
 
-			SCREEN2[offset + 1].tile = card_body;
-            SCREEN2[offset + 1].flip_h = 0;
-            SCREEN2[offset + 1].flip_v = 0;
-            SCREEN2[offset + 1].palette = 4;
+			SCREEN_2[offset + 1].tile = card_body;
+            SCREEN_2[offset + 1].flip_h = 0;
+            SCREEN_2[offset + 1].flip_v = 0;
+            SCREEN_2[offset + 1].palette = 4;
 			card_body++;
 
-			SCREEN2[offset + 2].tile = card_body;
-            SCREEN2[offset + 2].flip_h = 0;
-            SCREEN2[offset + 2].flip_v = 0;
-            SCREEN2[offset + 2].palette = 4;
+			SCREEN_2[offset + 2].tile = card_body;
+            SCREEN_2[offset + 2].flip_h = 0;
+            SCREEN_2[offset + 2].flip_v = 0;
+            SCREEN_2[offset + 2].palette = 4;
 			card_body++;
 
 			offset += SCR_WIDTH;
 		}
 
 		// bottom row
-		SCREEN2[offset].tile = 0x70 + value;
-        SCREEN2[offset].flip_h = 1;
-        SCREEN2[offset].flip_v = 1;
-        SCREEN2[offset].palette = 4;
+		SCREEN_2[offset].tile = 0x70 + value;
+        SCREEN_2[offset].flip_h = 1;
+        SCREEN_2[offset].flip_v = 1;
+        SCREEN_2[offset].palette = 4;
 
-		SCREEN2[offset + 1].tile = 0x50 + suit;
-        SCREEN2[offset + 1].flip_h = 1;
-        SCREEN2[offset + 1].flip_v = 1;
-        SCREEN2[offset + 1].palette = 4;
+		SCREEN_2[offset + 1].tile = 0x50 + suit;
+        SCREEN_2[offset + 1].flip_h = 1;
+        SCREEN_2[offset + 1].flip_v = 1;
+        SCREEN_2[offset + 1].palette = 4;
 
-		SCREEN2[offset + 2].tile = 0x57;
-        SCREEN2[offset + 2].flip_h = 0;
-        SCREEN2[offset + 2].flip_v = 0;
-        SCREEN2[offset + 2].palette = 4;
+		SCREEN_2[offset + 2].tile = 0x57;
+        SCREEN_2[offset + 2].flip_h = 0;
+        SCREEN_2[offset + 2].flip_v = 0;
+        SCREEN_2[offset + 2].palette = 4;
 	}
 
 }
@@ -353,19 +350,19 @@ void draw_empty_card(uint8_t x, uint8_t y)
 
 	for (i = 0; i < 4; i++)
 	{
-		SCREEN2[offset].tile = tile;
-        SCREEN2[offset].flip_h = 0;
-        SCREEN2[offset].flip_v = 0;
+		SCREEN_2[offset].tile = tile;
+        SCREEN_2[offset].flip_h = 0;
+        SCREEN_2[offset].flip_v = 0;
 		tile++;
 
-		SCREEN2[offset + 1].tile = tile;
-        SCREEN2[offset + 1].flip_h = 0;
-        SCREEN2[offset + 1].flip_v = 0;
+		SCREEN_2[offset + 1].tile = tile;
+        SCREEN_2[offset + 1].flip_h = 0;
+        SCREEN_2[offset + 1].flip_v = 0;
 		tile++;
 
-		SCREEN2[offset + 2].tile = tile;
-        SCREEN2[offset + 2].flip_h = 0;
-        SCREEN2[offset + 2].flip_v = 0;
+		SCREEN_2[offset + 2].tile = tile;
+        SCREEN_2[offset + 2].flip_h = 0;
+        SCREEN_2[offset + 2].flip_v = 0;
 		tile++;
 
 		offset += SCR_WIDTH;
