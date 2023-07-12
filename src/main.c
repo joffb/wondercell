@@ -8,9 +8,14 @@
 
 #ifdef __WONDERFUL_WWITCH__
 #include <sys/bios.h>
+#else
+// see wfconfig.toml
+#define WAVE_RAM ((uint8_t __wf_iram*) 0xEC0)
 #endif
 #include "card.h"
 #include "draw.h"
+#include "vgm.h"
+#include "entertainer_cvgm_bin.h"
 
 extern void vblank_int_handler(void);
 
@@ -37,6 +42,9 @@ uint8_t menu_cursor;
 
 uint8_t deal_x, deal_y;
 uint8_t checker_scroll_x, checker_scroll_y;
+
+vgmswan_state_t music_state;
+uint16_t music_ticks;
 
 void disable_interrupts()
 {
@@ -123,6 +131,9 @@ void main()
 	// disable interrupts for now
 	disable_interrupts();
 
+	// disable screen for now
+	outportw(IO_DISPLAY_CTRL, 0);
+
 	// initial random seed
 	rnd_val = 0;
 
@@ -146,6 +157,12 @@ void main()
 	draw_title_screen();
 	draw_checkerboard();
 
+	// setup music driver
+	music_ticks = VGMSWAN_PLAYBACK_FINISHED;
+#ifndef __WONDERFUL_WWITCH__
+	outportb(IO_SND_WAVE_BASE, SND_WAVE_BASE(WAVE_RAM));
+#endif
+
 	// initial game state
 	game_state = GAME_TITLE;
 
@@ -166,12 +183,25 @@ void main()
 		cpu_halt();
 #endif
 
+		// play music
+		if (music_ticks == VGMSWAN_PLAYBACK_FINISHED)
+		{
+			// initialize music
+			vgmswan_init(&music_state, entertainer_cvgm);
+			music_ticks = 0;
+		}
+
+		if (music_ticks > 1)
+			music_ticks--;
+		else
+			music_ticks = vgmswan_play(&music_state);
+
 		// get keypad state and from the last keypad state
 		// determine if a key has been pressed this frame 
 		// which wasn't pressed last frame
 #ifdef __WONDERFUL_WWITCH__
-		keypad = key_press_check();
 		keypad_pushed = key_hit_check();
+		keypad = key_press_check();
 #else
 		keypad = ws_keypad_scan();
 		keypad_pushed = ((keypad ^ keypad_last) & keypad);
