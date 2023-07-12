@@ -9,7 +9,6 @@
 #ifdef __WONDERFUL_WWITCH__
 #include <sys/bios.h>
 #endif
-
 #include "card.h"
 #include "draw.h"
 
@@ -37,6 +36,7 @@ uint16_t game_seed;
 uint8_t menu_cursor;
 
 uint8_t deal_x, deal_y;
+uint8_t checker_scroll_x, checker_scroll_y;
 
 void disable_interrupts()
 {
@@ -100,11 +100,11 @@ void new_game()
 	cursor_x = 0;
 
 	// setup cursor sprites
-	SPRITES[0].tile = 0x6;
+	SPRITES[0].tile = CURSOR_TILES;
 	SPRITES[0].palette = 0;
 	SPRITES[0].priority = 1;
 
-	SPRITES[1].tile = 0x7;
+	SPRITES[1].tile = CURSOR_TILES + 1;
 	SPRITES[1].palette = 0;
 	SPRITES[1].priority = 1;
 
@@ -130,6 +130,11 @@ void main()
 	keypad = 0;
 	keypad_last = 0;
 	
+	// checkerboard scrolling
+	tics = 0;
+	checker_scroll_x = checker_scroll_y = 0;
+	camera_y = 0;
+
 	// setup video
 	init_video();
 	copy_palettes();
@@ -137,10 +142,14 @@ void main()
 	// copy graphics for title screen
 	// and copy the tilemap
 	copy_title_screen_gfx();
+	copy_checkerboard_gfx();
 	draw_title_screen();
+	draw_checkerboard();
 
 	// initial game state
 	game_state = GAME_TITLE;
+
+	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1_PAGE_2) | SCR2_BASE(SCREEN_2));
 
 	// reenable interrupts
 	enable_interrupts();
@@ -177,6 +186,17 @@ void main()
 			// hide sprites
 			outportb(IO_SPR_COUNT, 0);
 
+			// update checkerboard scrolling
+			if (tics % 4 == 0)
+			{
+				checker_scroll_x++;
+				checker_scroll_y++;
+				outportb(IO_SCR1_SCRL_X, checker_scroll_x);
+				outportb(IO_SCR1_SCRL_Y, checker_scroll_y);				
+			}
+
+			tics++;
+
 			// wait for a key to be pressed to start the game
 			if (keypad_pushed)
 			{
@@ -186,8 +206,13 @@ void main()
 				copy_card_tile_gfx();
 				copy_text_gfx();
 				copy_you_win_gfx();
+				copy_baize_gfx();
 
-				// draw menu into an offscreen page for screen2
+				// reset screen 1 scroll
+				outportb(IO_SCR1_SCRL_X, 0);
+				outportb(IO_SCR1_SCRL_Y, 0);
+
+				// draw menu into an offscreen page for SCREEN_2
 				draw_menu();
 
 				// set up new game
@@ -234,7 +259,7 @@ void main()
 				);
 
 				// move through each cascade in turn
-				deal_x = (deal_x + 1) % CASCADES;
+				deal_x = (deal_x + 1) % 8;
 
 				// move to next row after going through all cascades
 				if (deal_x == 0)
@@ -254,6 +279,17 @@ void main()
 		// ingame menu
 		else if (game_state == GAME_MENU)
 		{
+			// update checkerboard scrolling
+			if (tics % 4 == 0)
+			{
+				checker_scroll_x++;
+				checker_scroll_y++;
+				outportb(IO_SCR1_SCRL_X, checker_scroll_x);
+				outportb(IO_SCR1_SCRL_Y, checker_scroll_y);				
+			}
+
+			tics++;
+
 			// cursor up
 			if (keypad_pushed & KEY_X1)
 			{
@@ -272,10 +308,14 @@ void main()
 
 			if (keypad_pushed & KEY_A)
 			{
+				// reset screen 1 scroll
+				outportb(IO_SCR1_SCRL_X, 0);
+				outportb(IO_SCR1_SCRL_Y, 0);
+
 				// Back
 				if (menu_cursor == 2)
 				{
-					// change screen2 base address back to the card screen map
+					// change SCREEN_2 base address back to the card screen map
 					outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2));
 
 					game_state = GAME_INGAME;
@@ -301,7 +341,11 @@ void main()
 			}
 			else if ((keypad_pushed & KEY_START) || (keypad_pushed & KEY_B))
 			{
-				// change screen2 base address to the card screen map
+				// reset screen 1 scroll
+				outportb(IO_SCR1_SCRL_X, 0);
+				outportb(IO_SCR1_SCRL_Y, 0);
+				
+				// change SCREEN_2 base address to the card screen map
 				outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2));
 
 				game_state = GAME_INGAME;
@@ -357,14 +401,14 @@ void main()
 					if (cursor_x < 4)
 					{
 						cursor_area = AREA_FREECELLS;
-						cursor_y = 0;
 					}
 					else
 					{
 						cursor_area = AREA_FOUNDATIONS;
 						cursor_x = cursor_x - 4;
-						cursor_y = 0;
 					}
+
+					cursor_y = 0;
 				}
 				// moving back down to the cascades
 				else
@@ -442,17 +486,30 @@ void main()
 			// start button opens the menu
 			if (keypad_pushed & KEY_START)
 			{
-				// change screen2 base address to the menu screen map
+				// change SCREEN_2 base address to the menu screen map
 				outportb(IO_SPR_COUNT, 2);
-				outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2_PAGE_2));
+				outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1_PAGE_2) | SCR2_BASE(SCREEN_2_PAGE_2));
+				
+				// reset screen 1 scroll
+				outportb(IO_SCR1_SCRL_X, 0);
+				outportb(IO_SCR1_SCRL_Y, 0);
+
+				checker_scroll_x = checker_scroll_y = 0;
 
 				menu_cursor = 0;
 				game_state = GAME_MENU;
 			}
 
-			// update cursor position if the state is still ingame
+			// update cursor and camera position if the state is still ingame
 			if (game_state == GAME_INGAME)
 			{
+				camera_y = (cursor_y < 9) 
+							? 0 
+							: (cursor_y - 9) * 8;
+
+				outportb(IO_SCR1_SCRL_Y, camera_y);
+				outportb(IO_SCR2_SCRL_Y, camera_y);
+
 				draw_cursor();
 			}
 		}

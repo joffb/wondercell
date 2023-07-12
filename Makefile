@@ -117,7 +117,7 @@ $(BUILDDIR)/%.c.o : %.c
 	@$(MKDIR) -p $(@D)
 	$(_V)$(CC) $(CFLAGS) -MMD -MP -c -o $@ $<
 
-$(BUILDDIR)/%.bin.o $(BUILDDIR)/%_bin.h : %.bin
+$(BUILDDIR)/%.bin.o : %.bin
 	@echo "  BIN2C   $<"
 	@$(MKDIR) -p $(@D)
 	$(_V)$(WF)/bin/wf-bin2c -a 2 --address-space __far $(@D) $<

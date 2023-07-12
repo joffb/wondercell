@@ -2,14 +2,25 @@
 // Joe Kennedy - 2023
 
 #include <stdint.h>
-#include <string.h>
 #include <ws.h>
+#include <wonderful.h>
 #include "draw.h"
 #include "card.h"
-#include "card_gfx.h"
-#include "text_gfx.h"
-#include "title_screen_gfx.h"
-#include "you_win_gfx.h"
+
+#include "cards_tiles_bin.h"
+#include "cards_palette_bin.h"
+
+#include "baize_tiles_bin.h"
+#include "baize_palette_bin.h"
+
+#include "text_tiles_bin.h"
+
+#include "you_win_tiles_bin.h"
+
+#include "title_screen_map_bin.h"
+#include "title_screen_tiles_bin.h"
+
+#include "menu_tilemap_bin.h"
 
 void init_video()
 {
@@ -31,44 +42,76 @@ void init_video()
 	// don't render any sprites for now
 	outportb(IO_SPR_COUNT, 0);
 
-	// enable just screen1 at title screen
-	outportw(IO_DISPLAY_CTRL, DISPLAY_SCR1_ENABLE);
+	// enable just SCREEN_1 at title screen
+	outportw(IO_DISPLAY_CTRL, DISPLAY_SCR1_ENABLE | DISPLAY_SCR2_ENABLE);
 
+}
+
+void copy_checkerboard_gfx()
+{
+    ws_dma_copy_words(MEM_TILE_4BPP(0), &cards_tiles, 0x10 * TILE_4BPP_LENGTH);
 }
 
 void copy_title_screen_gfx()
 {
-    ws_dma_copy_words(MEM_TILE_4BPP(0), &title_screen_gfx, 0xe0 * TILE_4BPP_LENGTH);
+    ws_dma_copy_words(MEM_TILE_4BPP(16), &title_screen_tiles, 0xe0 * TILE_4BPP_LENGTH);
 }
 
 void copy_text_gfx()
 {
-    ws_dma_copy_words(MEM_TILE_4BPP(160), &text_gfx, 64 * TILE_4BPP_LENGTH);
+    ws_dma_copy_words(MEM_TILE_4BPP(160), &text_tiles, 64 * TILE_4BPP_LENGTH);
 }
 
 void copy_card_tile_gfx()
 {
-    ws_dma_copy_words(MEM_TILE_4BPP(0), &card_gfx, 160 * TILE_4BPP_LENGTH);
+    ws_dma_copy_words(MEM_TILE_4BPP(0), &cards_tiles, 160 * TILE_4BPP_LENGTH);
 }
 
 void copy_you_win_gfx()
 {
-    ws_dma_copy_words(MEM_TILE_4BPP(YOU_WIN_TILES), &you_win_gfx, 32 * TILE_4BPP_LENGTH);
+    ws_dma_copy_words(MEM_TILE_4BPP(YOU_WIN_TILES), &you_win_tiles, 32 * TILE_4BPP_LENGTH);
+}
+
+void copy_baize_gfx()
+{
+    ws_dma_copy_words(MEM_TILE_4BPP(BAIZE_TILES), &baize_tiles, 9 * TILE_4BPP_LENGTH);
 }
 
 
 // copy palettes to vram
 void copy_palettes()
 {	
-    ws_dma_copy_words(MEM_COLOR_PALETTE(0), &card_gfx_palette, 32);
-    ws_dma_copy_words(MEM_COLOR_PALETTE(4), &card_gfx_palette, 32);
-    ws_dma_copy_words(MEM_COLOR_PALETTE(8), &card_gfx_palette, 32);
+    ws_dma_copy_words(MEM_COLOR_PALETTE(0), &cards_palette, 32);
+    ws_dma_copy_words(MEM_COLOR_PALETTE(1), &baize_palette, 32);
+    ws_dma_copy_words(MEM_COLOR_PALETTE(4), &cards_palette, 32);
+    ws_dma_copy_words(MEM_COLOR_PALETTE(8), &cards_palette, 32);
 }
 
 void clear_card_layer()
 {
-    // Cast necessary for wwitch target
-    ws_screen_fill_tiles(FP_OFF(SCREEN_2), 0, 0, 0, SCR_WIDTH, SCR_HEIGHT);
+    uint16_t index;
+
+	for (index = 0; index < SCR_WIDTH * SCR_HEIGHT; index++)
+	{
+        SCREEN_2[index].tile = 0;
+    }
+
+    //ws_screen_fill_tiles(SCREEN_2, 0, 0, 0, SCR_WIDTH, SCR_HEIGHT);
+}
+
+// draw the checkerboard background onto screen 1 page 2
+void draw_checkerboard()
+{
+    uint16_t index;
+
+	for (index = 0; index < SCR_WIDTH * SCR_HEIGHT; index++)
+	{
+		SCREEN_1_PAGE_2[index].tile = CHECKERBOARD_TILES + (index % 2) + (((index / 32) % 2) * 2);
+        SCREEN_1_PAGE_2[index].palette = 0;
+        SCREEN_1_PAGE_2[index].bank = 0;
+        SCREEN_1_PAGE_2[index].flip_h = 0;
+        SCREEN_1_PAGE_2[index].flip_v = 0;
+	}
 }
 
 // draw the green baize background onto screen 1
@@ -78,8 +121,8 @@ void draw_baize()
 
 	for (index = 0; index < SCR_WIDTH * SCR_HEIGHT; index++)
 	{
-		SCREEN_1[index].tile = 0x8 + (index & 0x1) + ((index >> 4) & 0x2);
-        SCREEN_1[index].palette = 0;
+		SCREEN_1[index].tile = BAIZE_TILES + (index % 3) + (((index / 32) % 3) * 3);
+        SCREEN_1[index].palette = 1;
         SCREEN_1[index].bank = 0;
         SCREEN_1[index].flip_h = 0;
         SCREEN_1[index].flip_v = 0;
@@ -114,40 +157,43 @@ void draw_empty_foundations()
 
 		// draw suit icon for each foundations
 		index = (tx + 1) + ((ty + 1) << 5);
-		SCREEN_1[index].tile = 0x58 + i;
+		SCREEN_2[index].tile = 0x58 + i;
 	}
 }
 
 void draw_title_screen()
 {
     uint8_t i, j;
-    uint16_t index = 0;
+    uint16_t screen_index = 0;
+    uint16_t map_index = 0;
+
+    // title_screen_map is a uint8_t array when converted
+    // treat it as a screen entry array instead
+    ws_scr_entry_t __far *map = (ws_scr_entry_t __far *) &title_screen_map;
 
     for (j = 0; j < DISPLAY_HEIGHT; j++)
     {
         for (i = 0; i < DISPLAY_WIDTH; i++)
         {
-            SCREEN_1[index].tile = title_screen_tilemap_tilemap[i + (DISPLAY_WIDTH * j)];
-            SCREEN_1[index].palette = 0;
-            SCREEN_1[index].bank = 0;
-            SCREEN_1[index].flip_h = 0;
-            SCREEN_1[index].flip_v = 0;
+            SCREEN_2[screen_index] = map[map_index];
+            SCREEN_2[screen_index].palette = 8;
 
-            index++;
+            map_index++;
+            screen_index++;
         }
 
-        index += 4;
+        screen_index += 4;
     }
 }
 
-// draw menu into an offscreen page which will be swapped out for screen2
+// draw menu into an offscreen page which will be swapped out for SCREEN_2
 void draw_menu()
 {
     uint16_t i;
 
 	for (i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i++)
 	{
-        SCREEN_2_PAGE_2[i].tile = menu_tilemap_tilemap[i];
+        SCREEN_2_PAGE_2[i].tile = menu_tilemap[i];
     }
 }
 
@@ -156,7 +202,7 @@ void set_up_you_win_sprites()
 {
     uint8_t i;
 
-    // disable screen2 to hide cards
+    // disable SCREEN_2 to hide cards
     outportw(IO_DISPLAY_CTRL, DISPLAY_SCR1_ENABLE | DISPLAY_SPR_ENABLE);
     outportb(IO_SPR_FIRST, 0);
     outportb(IO_SPR_COUNT, 32);
@@ -186,6 +232,7 @@ void draw_cursor()
     SPRITES[0].x += 20;
     SPRITES[0].y = (cursor_area_ty[cursor_area] + cursor_y) << 3;
     SPRITES[0].y += 8;
+    SPRITES[0].y -= camera_y;
 
     SPRITES[1].x = SPRITES[0].x;
     SPRITES[1].y = SPRITES[0].y + 8;
@@ -198,7 +245,7 @@ void draw_cursor()
     {
         SPRITES[i + 2] = card_in_hand_tiles[i];
         SPRITES[i + 2].x = ((tx + (i % 3)) << 3) + 4;
-        SPRITES[i + 2].y = ((ty + (i / 3)) << 3) + 6;
+        SPRITES[i + 2].y = ((ty + (i / 3)) << 3) + 6 - camera_y;
     }
 }
 

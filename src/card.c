@@ -4,10 +4,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <ws.h>
+#include <wonderful.h>
 #include "card.h"
 #include "draw.h"
 
 uint8_t cursor_area;
+
 uint8_t cursor_x;
 uint8_t cursor_y;
 
