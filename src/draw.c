@@ -89,14 +89,7 @@ void copy_palettes()
 
 void clear_card_layer()
 {
-    uint16_t index;
-
-	for (index = 0; index < SCR_WIDTH * SCR_HEIGHT; index++)
-	{
-        SCREEN_2[index].tile = 0;
-    }
-
-    //ws_screen_fill_tiles(SCREEN_2, 0, 0, 0, SCR_WIDTH, SCR_HEIGHT);
+    ws_screen_fill_tiles(SCREEN_2, 0, 0, 0, SCR_WIDTH, SCR_HEIGHT);
 }
 
 // draw the checkerboard background onto screen 1 page 2
@@ -163,27 +156,7 @@ void draw_empty_foundations()
 
 void draw_title_screen()
 {
-    uint8_t i, j;
-    uint16_t screen_index = 0;
-    uint16_t map_index = 0;
-
-    // title_screen_map is a uint8_t array when converted
-    // treat it as a screen entry array instead
-    ws_scr_entry_t __far *map = (ws_scr_entry_t __far *) &title_screen_map;
-
-    for (j = 0; j < DISPLAY_HEIGHT; j++)
-    {
-        for (i = 0; i < DISPLAY_WIDTH; i++)
-        {
-            SCREEN_2[screen_index] = map[map_index];
-            SCREEN_2[screen_index].palette = 8;
-
-            map_index++;
-            screen_index++;
-        }
-
-        screen_index += 4;
-    }
+    ws_screen_put_tiles(SCREEN_2, &title_screen_map, 0, 0, 28, 18);
 }
 
 // draw menu into an offscreen page which will be swapped out for SCREEN_2
