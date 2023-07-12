@@ -67,8 +67,7 @@ void copy_palettes()
 
 void clear_card_layer()
 {
-    // Cast necessary for wwitch target
-    ws_screen_fill_tiles(FP_OFF(SCREEN_2), 0, 0, 0, SCR_WIDTH, SCR_HEIGHT);
+    ws_screen_fill_tiles(SCREEN_2, 0, 0, 0, SCR_WIDTH, SCR_HEIGHT);
 }
 
 // draw the green baize background onto screen 1
