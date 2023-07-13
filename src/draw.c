@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <ws.h>
 #include <wonderful.h>
+#include <wsx/lzsa.h>
+
 #include "draw.h"
 #include "card.h"
 
@@ -13,19 +15,22 @@
 #include "baize_tiles_bin.h"
 #include "baize_palette_bin.h"
 
-#include "text_tiles_bin.h"
+#include "text_tiles_lzsa2_bin.h"
 
-#include "you_win_tiles_bin.h"
+#include "you_win_tiles_lzsa2_bin.h"
 
 #include "title_screen_map_bin.h"
-#include "title_screen_tiles_bin.h"
+#include "title_screen_tiles_lzsa2_bin.h"
 
 #include "menu_tilemap_bin.h"
 
 void init_video()
 {
-	// 4bpp planar gfx
+	hide_screen();
+
+	// 4bpp planar gfx, set black color
 	ws_mode_set(WS_MODE_COLOR_4BPP);
+	MEM_COLOR_PALETTE(0)[0] = 0x000;
 
 	// set base addresses for screens 1 and 2
 	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2));
@@ -41,50 +46,64 @@ void init_video()
 	
 	// don't render any sprites for now
 	outportb(IO_SPR_COUNT, 0);
+}
 
+void hide_screen()
+{
+	// disable all video output for now
+	outportw(IO_DISPLAY_CTRL, 0);
+}
+
+void show_title_screen()
+{
 	// enable just SCREEN_1 at title screen
 	outportw(IO_DISPLAY_CTRL, DISPLAY_SCR1_ENABLE | DISPLAY_SCR2_ENABLE);
+}
 
+void show_game_screen()
+{
+	// enable all tile layers and sprites
+	outportw(IO_DISPLAY_CTRL, DISPLAY_SCR1_ENABLE | DISPLAY_SCR2_ENABLE | DISPLAY_SPR_ENABLE);
 }
 
 void copy_checkerboard_gfx()
 {
-    ws_dma_copy_words(MEM_TILE_4BPP(0), &cards_tiles, 0x10 * TILE_4BPP_LENGTH);
+    ws_dma_copy_words(MEM_TILE_4BPP(0), cards_tiles, 0x10 * TILE_4BPP_LENGTH);
 }
 
 void copy_title_screen_gfx()
 {
-    ws_dma_copy_words(MEM_TILE_4BPP(16), &title_screen_tiles, 0xe0 * TILE_4BPP_LENGTH);
+    wsx_lzsa2_decompress(MEM_TILE_4BPP(16), title_screen_tiles_lzsa2);
 }
 
 void copy_text_gfx()
 {
-    ws_dma_copy_words(MEM_TILE_4BPP(160), &text_tiles, 64 * TILE_4BPP_LENGTH);
+    wsx_lzsa2_decompress(MEM_TILE_4BPP(160), text_tiles_lzsa2);
 }
 
 void copy_card_tile_gfx()
 {
-    ws_dma_copy_words(MEM_TILE_4BPP(0), &cards_tiles, 160 * TILE_4BPP_LENGTH);
+    ws_dma_copy_words(MEM_TILE_4BPP(0), cards_tiles, 160 * TILE_4BPP_LENGTH);
 }
 
 void copy_you_win_gfx()
 {
-    ws_dma_copy_words(MEM_TILE_4BPP(YOU_WIN_TILES), &you_win_tiles, 32 * TILE_4BPP_LENGTH);
+    wsx_lzsa2_decompress(MEM_TILE_4BPP(YOU_WIN_TILES), you_win_tiles_lzsa2);
 }
 
 void copy_baize_gfx()
 {
-    ws_dma_copy_words(MEM_TILE_4BPP(BAIZE_TILES), &baize_tiles, 9 * TILE_4BPP_LENGTH);
+    ws_dma_copy_words(MEM_TILE_4BPP(BAIZE_TILES), baize_tiles, 9 * TILE_4BPP_LENGTH);
 }
 
 
 // copy palettes to vram
 void copy_palettes()
 {	
-    ws_dma_copy_words(MEM_COLOR_PALETTE(0), &cards_palette, 32);
-    ws_dma_copy_words(MEM_COLOR_PALETTE(1), &baize_palette, 32);
-    ws_dma_copy_words(MEM_COLOR_PALETTE(4), &cards_palette, 32);
-    ws_dma_copy_words(MEM_COLOR_PALETTE(8), &cards_palette, 32);
+    ws_dma_copy_words(MEM_COLOR_PALETTE(0) + 1, cards_palette + 2, 30);
+    ws_dma_copy_words(MEM_COLOR_PALETTE(1), baize_palette, 32);
+    ws_dma_copy_words(MEM_COLOR_PALETTE(4), cards_palette, 32);
+    ws_dma_copy_words(MEM_COLOR_PALETTE(8), cards_palette, 32);
 }
 
 void clear_card_layer()
@@ -156,7 +175,7 @@ void draw_empty_foundations()
 
 void draw_title_screen()
 {
-    ws_screen_put_tiles(SCREEN_2, &title_screen_map, 0, 0, 28, 18);
+    ws_screen_put_tiles(SCREEN_2, title_screen_map, 0, 0, 28, 18);
 }
 
 // draw menu into an offscreen page which will be swapped out for SCREEN_2

@@ -68,7 +68,7 @@ void enable_interrupts()
 
 	// enable wonderswan vblank interrupt
 	ws_hwint_enable(HWINT_VBLANK);
-	
+
 	// enable cpu interrupts
 	cpu_irq_enable();
 #endif
@@ -93,14 +93,10 @@ void new_game()
 	initialise_foundations();
 
 	// initialise deck of cards and shuffle it
-    initialise_cards_array();
-    initialise_deck();
-    shuffle_deck();
+	initialise_cards_array();
+	initialise_deck();
+	shuffle_deck();
 
-	// enable all tile layers and sprites
-	outportw(IO_DISPLAY_CTRL, DISPLAY_SCR1_ENABLE | DISPLAY_SCR2_ENABLE | DISPLAY_SPR_ENABLE);
-
-	//
 	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2));
 
 	// default cursor to first cascade
@@ -116,6 +112,8 @@ void new_game()
 	SPRITES[1].palette = 0;
 	SPRITES[1].priority = 1;
 
+	show_game_screen();
+
 	// do dealing out the cards animation to start with
 	deal_x = deal_y = 0;
 	game_state = GAME_DEALING;
@@ -130,9 +128,6 @@ void main()
 {
 	// disable interrupts for now
 	disable_interrupts();
-
-	// disable screen for now
-	outportw(IO_DISPLAY_CTRL, 0);
 
 	// initial random seed
 	rnd_val = 0;
@@ -166,7 +161,9 @@ void main()
 	// initial game state
 	game_state = GAME_TITLE;
 
+	// show title screen
 	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1_PAGE_2) | SCR2_BASE(SCREEN_2));
+	show_title_screen();
 
 	// reenable interrupts
 	enable_interrupts();
@@ -231,6 +228,7 @@ void main()
 			if (keypad_pushed)
 			{
 				disable_interrupts();
+				hide_screen();
 
 				// copy game graphics
 				copy_card_tile_gfx();

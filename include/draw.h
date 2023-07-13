@@ -20,6 +20,10 @@ uint8_t camera_y;
 
 void init_video();
 
+void hide_screen();
+void show_title_screen();
+void show_game_screen();
+
 void copy_title_screen_gfx();
 void copy_checkerboard_gfx();
 void copy_card_tile_gfx();
