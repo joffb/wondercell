@@ -20,6 +20,10 @@ uint8_t camera_y;
 
 void init_video();
 
+void hide_screen();
+void show_title_screen();
+void show_game_screen();
+
 void copy_title_screen_gfx();
 void copy_checkerboard_gfx();
 void copy_card_tile_gfx();
@@ -39,6 +43,7 @@ void draw_menu();
 
 void set_up_you_win_sprites();
 
+void reset_drawn_cursor();
 void draw_cursor();
 void copy_card_tiles_to_sprites(uint8_t x, uint8_t y);
 void clear_card_tiles(uint8_t x, uint8_t y);

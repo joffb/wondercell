@@ -14,6 +14,7 @@
 #endif
 #include "card.h"
 #include "draw.h"
+#include "main.h"
 #include "vgm.h"
 #include "entertainer_cvgm_bin.h"
 
@@ -68,7 +69,7 @@ void enable_interrupts()
 
 	// enable wonderswan vblank interrupt
 	ws_hwint_enable(HWINT_VBLANK);
-	
+
 	// enable cpu interrupts
 	cpu_irq_enable();
 #endif
@@ -93,19 +94,16 @@ void new_game()
 	initialise_foundations();
 
 	// initialise deck of cards and shuffle it
-    initialise_cards_array();
-    initialise_deck();
-    shuffle_deck();
+	initialise_cards_array();
+	initialise_deck();
+	shuffle_deck();
 
-	// enable all tile layers and sprites
-	outportw(IO_DISPLAY_CTRL, DISPLAY_SCR1_ENABLE | DISPLAY_SCR2_ENABLE | DISPLAY_SPR_ENABLE);
-
-	//
 	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2));
 
 	// default cursor to first cascade
 	cursor_area = AREA_CASCADES;
 	cursor_x = 0;
+	reset_drawn_cursor();
 
 	// setup cursor sprites
 	SPRITES[0].tile = CURSOR_TILES;
@@ -115,6 +113,8 @@ void new_game()
 	SPRITES[1].tile = CURSOR_TILES + 1;
 	SPRITES[1].palette = 0;
 	SPRITES[1].priority = 1;
+
+	show_game_screen();
 
 	// do dealing out the cards animation to start with
 	deal_x = deal_y = 0;
@@ -126,13 +126,35 @@ void new_game()
 }
 
 
+void wait_for_vblank()
+{
+#ifdef __WONDERFUL_WWITCH__
+	sys_wait(1);
+#else
+	// halt cpu
+	// the program will sit here until the vblank interrupt
+	// is triggered and unhalts it
+	cpu_halt();
+#endif
+
+	// play music
+	if (music_ticks == VGMSWAN_PLAYBACK_FINISHED)
+	{
+		// initialize music
+		vgmswan_init(&music_state, entertainer_cvgm);
+		music_ticks = 0;
+	}
+
+	if (music_ticks > 1)
+		music_ticks--;
+	else
+		music_ticks = vgmswan_play(&music_state);
+}
+
 void main()
 {
 	// disable interrupts for now
 	disable_interrupts();
-
-	// disable screen for now
-	outportw(IO_DISPLAY_CTRL, 0);
 
 	// initial random seed
 	rnd_val = 0;
@@ -166,7 +188,9 @@ void main()
 	// initial game state
 	game_state = GAME_TITLE;
 
+	// show title screen
 	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1_PAGE_2) | SCR2_BASE(SCREEN_2));
+	show_title_screen();
 
 	// reenable interrupts
 	enable_interrupts();
@@ -174,27 +198,7 @@ void main()
 	// main loop
 	while (1)
 	{
-		// halt cpu
-		// the program will sit here until the vblank interrupt
-		// is triggered and unhalts it
-#ifdef __WONDERFUL_WWITCH__
-		sys_wait(1);
-#else
-		cpu_halt();
-#endif
-
-		// play music
-		if (music_ticks == VGMSWAN_PLAYBACK_FINISHED)
-		{
-			// initialize music
-			vgmswan_init(&music_state, entertainer_cvgm);
-			music_ticks = 0;
-		}
-
-		if (music_ticks > 1)
-			music_ticks--;
-		else
-			music_ticks = vgmswan_play(&music_state);
+		wait_for_vblank();
 
 		// get keypad state and from the last keypad state
 		// determine if a key has been pressed this frame 
@@ -231,6 +235,7 @@ void main()
 			if (keypad_pushed)
 			{
 				disable_interrupts();
+				hide_screen();
 
 				// copy game graphics
 				copy_card_tile_gfx();
@@ -392,7 +397,6 @@ void main()
 		// ingame
 		else if (game_state == GAME_INGAME)
 		{
-
 			// pick up or put down a card
 			if (keypad_pushed & KEY_A)
 			{
