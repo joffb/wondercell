@@ -24,6 +24,9 @@
 
 #include "menu_tilemap_bin.h"
 
+static uint8_t drawn_cursor_x;
+static uint16_t drawn_cursor_y;
+
 void init_video()
 {
 	hide_screen();
@@ -211,33 +214,50 @@ void set_up_you_win_sprites()
     }
 }
 
+void reset_drawn_cursor()
+{
+	drawn_cursor_x = (cursor_area_tx[cursor_area] + (cursor_x * 3)) << 3;
+	drawn_cursor_y = (cursor_area_ty[cursor_area] + cursor_y) << 3;
+}
+
+static uint16_t interpolate_value(uint16_t value, uint16_t target)
+{
+    if (value == target)
+        return target;
+    else if (value < target)
+        return (value * 3 + target + 3) >> 2;
+    else
+        return (value * 3 + target) >> 2;
+}
+
 void draw_cursor()
 {
     uint8_t i;
+
+    // update drawn cursor position
+    uint16_t old_drawn_cursor_x = drawn_cursor_x;
+    uint16_t old_drawn_cursor_y = drawn_cursor_y;
+    reset_drawn_cursor();
+    drawn_cursor_x = interpolate_value(old_drawn_cursor_x, drawn_cursor_x);
+    drawn_cursor_y = interpolate_value(old_drawn_cursor_y, drawn_cursor_y);
 
     // number of sprites to render
     outportb(IO_SPR_FIRST, 0);
     outportb(IO_SPR_COUNT, 2 + card_in_hand_tiles_count);
 
     // cursor position
-    SPRITES[0].x = (cursor_area_tx[cursor_area] + (cursor_x * 3)) << 3;
-    SPRITES[0].x += 20;
-    SPRITES[0].y = (cursor_area_ty[cursor_area] + cursor_y) << 3;
-    SPRITES[0].y += 8;
-    SPRITES[0].y -= camera_y;
+    SPRITES[0].x = drawn_cursor_x + 20;
+    SPRITES[0].y = drawn_cursor_y + 8 - camera_y;
 
     SPRITES[1].x = SPRITES[0].x;
     SPRITES[1].y = SPRITES[0].y + 8;
-
-    uint8_t tx = cursor_area_tx[cursor_area] + (cursor_x * 3);
-    uint8_t ty = cursor_area_ty[cursor_area] + (cursor_y);
 
     // set up sprites for card which is being moved
     for (i = 0; i < card_in_hand_tiles_count; i++)
     {
         SPRITES[i + 2] = card_in_hand_tiles[i];
-        SPRITES[i + 2].x = ((tx + (i % 3)) << 3) + 4;
-        SPRITES[i + 2].y = ((ty + (i / 3)) << 3) + 6 - camera_y;
+        SPRITES[i + 2].x = (drawn_cursor_x + ((i % 3) << 3)) + 4;
+        SPRITES[i + 2].y = (drawn_cursor_y + ((i / 3) << 3)) + 6 - camera_y;
     }
 }
 

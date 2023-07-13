@@ -7,6 +7,7 @@
 #include <wonderful.h>
 #include "card.h"
 #include "draw.h"
+#include "main.h"
 
 uint8_t cursor_area;
 
@@ -221,13 +222,16 @@ void take_card()
 {
     uint8_t card;
 
+    reset_drawn_cursor();
+
     // take card from cascades
     if (cursor_area == AREA_CASCADES && cascade_counts[cursor_x] > 0)
     {
-        card = cascades[cursor_x][cursor_y];
+        uint8_t old_cursor_x = cursor_x;
+        uint8_t old_cursor_y = cursor_y;
 
+        card = cascades[cursor_x][cursor_y];
         copy_card_tiles_to_sprites(cursor_area_tx[cursor_area] + (cursor_x * 3), cursor_area_ty[cursor_area] + cursor_y);
-        clear_card_tiles(cursor_area_tx[cursor_area] + (cursor_x * 3), cursor_area_ty[cursor_area] + cursor_y);
         cascade_counts[cursor_x]--;
 
         // check if this is an ace, if it is move it to the foundations
@@ -238,6 +242,7 @@ void take_card()
 
             card_in_hand_tiles_count = 0;
 
+            clear_card_tiles(cursor_area_tx[cursor_area] + (cursor_x * 3), cursor_area_ty[cursor_area] + cursor_y);
             draw_card_tiles(
                 card,
                 cursor_area_tx[AREA_FOUNDATIONS] + ((card >> 4) * 3), 
@@ -258,6 +263,15 @@ void take_card()
             cursor_y--;
         }
 
+        if (card_in_hand_tiles_count > 0)
+        {
+            // the sprite table is updated at the beginning of vblank
+            // this means that we must clear the card tiles one frame after updating the sprite table
+            draw_cursor();
+            wait_for_vblank();
+            clear_card_tiles(cursor_area_tx[cursor_area] + (old_cursor_x * 3), cursor_area_ty[cursor_area] + old_cursor_y);
+        }
+
         // redraw bottom card of cascade
         if (cascade_counts[cursor_x] > 0)
         {
@@ -276,7 +290,6 @@ void take_card()
     else if (cursor_area == AREA_FREECELLS && freecells[cursor_x][0] != NO_CARD)
     {
         copy_card_tiles_to_sprites(cursor_area_tx[cursor_area] + (cursor_x * 3), cursor_area_ty[cursor_area] + cursor_y);
-        draw_empty_card(cursor_area_tx[AREA_FREECELLS] + (cursor_x * 3), cursor_area_ty[AREA_FREECELLS]);
 
         card_in_hand = freecells[cursor_x][0];
         card_in_hand_area = AREA_FREECELLS;
@@ -284,12 +297,18 @@ void take_card()
         card_in_hand_y = cursor_y;
 
         freecells[cursor_x][0] = NO_CARD;
+
+        draw_cursor();
+        wait_for_vblank();
+        draw_empty_card(cursor_area_tx[AREA_FREECELLS] + (cursor_x * 3), cursor_area_ty[AREA_FREECELLS]);
     }
 }
 
 void place_card()
 {
     uint8_t i;
+
+    reset_drawn_cursor();
 
     // putting the card down on a cascade
     if (cursor_area == AREA_CASCADES)

@@ -43,6 +43,7 @@ void draw_menu();
 
 void set_up_you_win_sprites();
 
+void reset_drawn_cursor();
 void draw_cursor();
 void copy_card_tiles_to_sprites(uint8_t x, uint8_t y);
 void clear_card_tiles(uint8_t x, uint8_t y);

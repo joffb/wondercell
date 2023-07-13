@@ -14,6 +14,7 @@
 #endif
 #include "card.h"
 #include "draw.h"
+#include "main.h"
 #include "vgm.h"
 #include "entertainer_cvgm_bin.h"
 
@@ -102,6 +103,7 @@ void new_game()
 	// default cursor to first cascade
 	cursor_area = AREA_CASCADES;
 	cursor_x = 0;
+	reset_drawn_cursor();
 
 	// setup cursor sprites
 	SPRITES[0].tile = CURSOR_TILES;
@@ -123,6 +125,31 @@ void new_game()
 	card_in_hand_tiles_count = 0;
 }
 
+
+void wait_for_vblank()
+{
+#ifdef __WONDERFUL_WWITCH__
+	sys_wait(1);
+#else
+	// halt cpu
+	// the program will sit here until the vblank interrupt
+	// is triggered and unhalts it
+	cpu_halt();
+#endif
+
+	// play music
+	if (music_ticks == VGMSWAN_PLAYBACK_FINISHED)
+	{
+		// initialize music
+		vgmswan_init(&music_state, entertainer_cvgm);
+		music_ticks = 0;
+	}
+
+	if (music_ticks > 1)
+		music_ticks--;
+	else
+		music_ticks = vgmswan_play(&music_state);
+}
 
 void main()
 {
@@ -171,27 +198,7 @@ void main()
 	// main loop
 	while (1)
 	{
-		// halt cpu
-		// the program will sit here until the vblank interrupt
-		// is triggered and unhalts it
-#ifdef __WONDERFUL_WWITCH__
-		sys_wait(1);
-#else
-		cpu_halt();
-#endif
-
-		// play music
-		if (music_ticks == VGMSWAN_PLAYBACK_FINISHED)
-		{
-			// initialize music
-			vgmswan_init(&music_state, entertainer_cvgm);
-			music_ticks = 0;
-		}
-
-		if (music_ticks > 1)
-			music_ticks--;
-		else
-			music_ticks = vgmswan_play(&music_state);
+		wait_for_vblank();
 
 		// get keypad state and from the last keypad state
 		// determine if a key has been pressed this frame 
@@ -390,7 +397,6 @@ void main()
 		// ingame
 		else if (game_state == GAME_INGAME)
 		{
-
 			// pick up or put down a card
 			if (keypad_pushed & KEY_A)
 			{
