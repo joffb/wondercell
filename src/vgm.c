@@ -42,6 +42,9 @@ void vgmswan_init(vgmswan_state_t *state, const void __far* pointer) {
 
 #ifdef __WONDERFUL_WWITCH__
     sound_init();
+    sound_set_output(SND_OUT_HEADPHONES_ENABLE | SND_OUT_SPEAKER_ENABLE | SND_OUT_VOLUME_12_5);
+#else
+    outportb(IO_SND_OUT_CTRL, SND_OUT_HEADPHONES_ENABLE | SND_OUT_SPEAKER_ENABLE | SND_OUT_VOLUME_12_5);
 #endif
 }
 
