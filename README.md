@@ -3,13 +3,15 @@ FreeCell for Wonderswan Colour using Wonderful Toolchain
 
 ![screenshot of wondercell](https://github.com/joffb/wondercell/blob/main/screenshots/screenshot.png?raw=true)
 
+WonderWitch support, LZSA graphics compression and VGM playback added by Asie!
+
 Built using Asie's [Wonderful Toolchain](https://github.com/WonderfulToolchain/wonderful-i8086)
 
 Graphics drawn in Aseprite
 
-Tilemaps for menu and title screen in [Tilemap Studio](https://github.com/Rangi42/tilemap-studio)
+Music made in Furnace
 
-WonderWitch support, LZSA graphics compression and VGM playback added by Asie!
+Tilemaps for menu made in [Tilemap Studio](https://github.com/Rangi42/tilemap-studio)
 
 Controls:
 + X dpad to move the cursor
@@ -31,4 +33,3 @@ make -f Makefile.wwitch
 Still to do:
 + Moving multiple cards at a time
 + Fades/transitions between screens
-+ Sound!
