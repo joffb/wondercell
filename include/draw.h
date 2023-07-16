@@ -4,6 +4,10 @@
 #pragma once
 #include <wonderful.h>
 
+#define BAIZE_PALETTE 1
+#define CHECKERBOARD_PALETTE 2
+#define CARDS_PALETTE 12
+
 #define YOU_WIN_TILES 0xE0
 #define CURSOR_TILES 0x5
 #define BAIZE_TILES 0x7
@@ -11,10 +15,10 @@
 
 #define SCREEN_1 ((ws_scr_entry_t __wf_iram*) 0x1000)
 #define SCREEN_1_PAGE_2 ((ws_scr_entry_t __wf_iram*) 0x1800)
-#define SCREEN_2 ((ws_scr_entry_t __wf_iram*) 0x2000)
-#define SCREEN_2_PAGE_2 ((ws_scr_entry_t __wf_iram*) 0x2800)
+#define SCREEN_2 ((ws_scr_entry_t __wf_iram*) 0x3000)
+#define SCREEN_2_PAGE_2 ((ws_scr_entry_t __wf_iram*) 0x3800)
 
-#define SPRITES ((ws_sprite_t __wf_iram*) 0x3e00)
+#define SPRITES ((ws_sprite_t __wf_iram*) 0x2e00)
 
 uint8_t camera_y;
 
