@@ -1,9 +1,9 @@
 # wondercell
-FreeCell for Wonderswan Colour using Wonderful Toolchain
+FreeCell for Wonderswan using Wonderful Toolchain
 
 ![screenshot of wondercell](https://github.com/joffb/wondercell/blob/main/screenshots/screenshot.png?raw=true)
 
-WonderWitch support, LZSA graphics compression and VGM playback added by Asie!
+WonderWitch support, LZSA graphics compression, mono gfx and VGM playback added by Asie!
 
 Built using Asie's [Wonderful Toolchain](https://github.com/WonderfulToolchain/wonderful-i8086)
 
