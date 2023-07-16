@@ -12,11 +12,14 @@
 // see wfconfig.toml
 #define WAVE_RAM ((uint8_t __wf_iram*) 0xEC0)
 #endif
+
 #include "card.h"
 #include "draw.h"
 #include "main.h"
 #include "vgm.h"
 #include "entertainer_cvgm_bin.h"
+#include "title_screen_cvgm_bin.h"
+#include "you_win_cvgm_bin.h"
 
 extern void vblank_int_handler(void);
 
@@ -46,6 +49,8 @@ uint8_t checker_scroll_x, checker_scroll_y;
 
 vgmswan_state_t music_state;
 uint16_t music_ticks;
+
+const uint8_t __far * current_cvgm;
 
 void disable_interrupts()
 {
@@ -141,7 +146,7 @@ void wait_for_vblank()
 	if (music_ticks == VGMSWAN_PLAYBACK_FINISHED)
 	{
 		// initialize music
-		vgmswan_init(&music_state, entertainer_cvgm);
+		vgmswan_init(&music_state, current_cvgm);
 		music_ticks = 0;
 	}
 
@@ -191,6 +196,9 @@ void main()
 	// show title screen
 	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1_PAGE_2) | SCR2_BASE(SCREEN_2));
 	show_title_screen();
+
+	// initial background music
+	current_cvgm = title_screen_cvgm;
 
 	// reenable interrupts
 	enable_interrupts();
@@ -252,6 +260,10 @@ void main()
 
 				// set up new game
 				new_game();
+
+				// game music
+				current_cvgm = entertainer_cvgm;
+				music_ticks = VGMSWAN_PLAYBACK_FINISHED;
 				
 				enable_interrupts();
 			}
@@ -270,7 +282,10 @@ void main()
 			if (keypad_pushed && tics == 75)
 			{
 				disable_interrupts();
+				current_cvgm = entertainer_cvgm;
+				music_ticks = VGMSWAN_PLAYBACK_FINISHED;
 				new_game();
+
 				enable_interrupts();
 			}
 		}
@@ -399,7 +414,7 @@ void main()
 		{
 			// pick up or put down a card
 			if (keypad_pushed & KEY_A)
-			{
+			{				
 				// no card currently
 				if (card_in_hand == NO_CARD)
 				{
@@ -413,6 +428,10 @@ void main()
 					if (check_if_game_won())
 					{
 						set_up_you_win_sprites();
+
+						// change to You Win music
+						current_cvgm = you_win_cvgm;
+						music_ticks = VGMSWAN_PLAYBACK_FINISHED;
 
 						game_state = GAME_WON;
 						tics = 0;

@@ -1,5 +1,7 @@
 # wondercell
-FreeCell for Wonderswan using Wonderful Toolchain
+FreeCell for Wonderswan Colour using Wonderful Toolchain
+
+![screenshot of wondercell](https://github.com/joffb/wondercell/blob/main/screenshots/screenshot.png?raw=true)
 
 Built using Asie's [Wonderful Toolchain](https://github.com/WonderfulToolchain/wonderful-i8086)
 
@@ -7,7 +9,7 @@ Graphics drawn in Aseprite
 
 Tilemaps for menu and title screen in [Tilemap Studio](https://github.com/Rangi42/tilemap-studio)
 
-WonderWitch support added by Asie!
+WonderWitch support, LZSA graphics compression and VGM playback added by Asie!
 
 Controls:
 + X dpad to move the cursor
