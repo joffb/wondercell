@@ -2,6 +2,7 @@
 // Joe Kennedy - 2023
 
 #include <stdint.h>
+#include <string.h>
 #include <ws.h>
 #include <wonderful.h>
 #include <wsx/lzsa.h>
@@ -11,29 +12,52 @@
 
 #include "cards_tiles_bin.h"
 #include "cards_palette_bin.h"
+#include "cards_mono_tiles_bin.h"
 
 #include "baize_tiles_bin.h"
 #include "baize_palette_bin.h"
+#include "baize_mono_tiles_bin.h"
 
 #include "text_tiles_lzsa2_bin.h"
+#include "text_mono_tiles_lzsa2_bin.h"
 
 #include "you_win_tiles_lzsa2_bin.h"
+#include "you_win_mono_tiles_lzsa2_bin.h"
 
 #include "title_screen_map_bin.h"
 #include "title_screen_tiles_lzsa2_bin.h"
+#include "title_screen_mono_tiles_lzsa2_bin.h"
 
 #include "menu_tilemap_bin.h"
 
 static uint8_t drawn_cursor_x;
 static uint16_t drawn_cursor_y;
 
+// #define FORCE_MONO
+
 void init_video()
 {
 	hide_screen();
 
-	// 4bpp planar gfx, set black color
-	ws_mode_set(WS_MODE_COLOR_4BPP);
-	MEM_COLOR_PALETTE(0)[0] = 0x000;
+#ifndef FORCE_MONO
+	if (ws_mode_set(WS_MODE_COLOR_4BPP))
+#else
+	if (0)
+#endif
+	{
+		// 4bpp planar gfx, set black color
+		MEM_COLOR_PALETTE(0)[0] = 0x000;
+	}
+	else
+	{
+		// mono gfx, set black color
+		outportw(IO_SCR_PAL_0, MONO_PAL_COLORS(0, 0, 0, 0));
+
+		// initialize display LUT
+		// colors 7,6,5,4 used by baize
+		// colors 7,3,1,0 used by UI
+		ws_display_set_shade_lut(SHADE_LUT(0, 2, 4, 6, 12, 13, 14, 15));
+	}
 
 	// set base addresses for screens 1 and 2
 	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2));
@@ -71,47 +95,73 @@ void show_game_screen()
 
 void copy_checkerboard_gfx()
 {
-    ws_dma_copy_words(MEM_TILE_4BPP(0), cards_tiles, 0x10 * TILE_4BPP_LENGTH);
+	if (ws_system_color_active())
+		ws_dma_copy_words(MEM_TILE_4BPP(0), cards_tiles, 0x10 * TILE_4BPP_LENGTH);
+	else
+		memcpy(MEM_TILE(0), cards_mono_tiles, 0x10 * TILE_LENGTH);
 }
 
 void copy_title_screen_gfx()
 {
-    wsx_lzsa2_decompress(MEM_TILE_4BPP(16), title_screen_tiles_lzsa2);
+	if (ws_system_color_active())
+		wsx_lzsa2_decompress(MEM_TILE_4BPP(16), title_screen_tiles_lzsa2);
+	else
+		wsx_lzsa2_decompress(MEM_TILE(16), title_screen_mono_tiles_lzsa2);
 }
 
 void copy_text_gfx()
 {
-    wsx_lzsa2_decompress(MEM_TILE_4BPP(160), text_tiles_lzsa2);
+	if (ws_system_color_active())
+		wsx_lzsa2_decompress(MEM_TILE_4BPP(160), text_tiles_lzsa2);
+	else
+		wsx_lzsa2_decompress(MEM_TILE(160), text_tiles_lzsa2);
 }
 
 void copy_card_tile_gfx()
 {
-    ws_dma_copy_words(MEM_TILE_4BPP(0), cards_tiles, 160 * TILE_4BPP_LENGTH);
+	if (ws_system_color_active())
+		ws_dma_copy_words(MEM_TILE_4BPP(0), cards_tiles, 160 * TILE_4BPP_LENGTH);
+	else
+		memcpy(MEM_TILE(0), cards_mono_tiles, 160 * TILE_LENGTH);
 }
 
 void copy_you_win_gfx()
 {
-    wsx_lzsa2_decompress(MEM_TILE_4BPP(YOU_WIN_TILES), you_win_tiles_lzsa2);
+	if (ws_system_color_active())
+		wsx_lzsa2_decompress(MEM_TILE_4BPP(YOU_WIN_TILES), you_win_tiles_lzsa2);
+	else
+		wsx_lzsa2_decompress(MEM_TILE(YOU_WIN_TILES), you_win_mono_tiles_lzsa2);
 }
 
 void copy_baize_gfx()
 {
-    ws_dma_copy_words(MEM_TILE_4BPP(BAIZE_TILES), baize_tiles, 9 * TILE_4BPP_LENGTH);
+	if (ws_system_color_active())
+		ws_dma_copy_words(MEM_TILE_4BPP(BAIZE_TILES), baize_tiles, 9 * TILE_4BPP_LENGTH);
+	else
+		memcpy(MEM_TILE(BAIZE_TILES), baize_mono_tiles, 9 * TILE_LENGTH);
 }
 
 
 // copy palettes to vram
 void copy_palettes()
-{	
-    ws_dma_copy_words(MEM_COLOR_PALETTE(0) + 1, cards_palette + 2, 30);
-    ws_dma_copy_words(MEM_COLOR_PALETTE(1), baize_palette, 32);
-    ws_dma_copy_words(MEM_COLOR_PALETTE(4), cards_palette, 32);
-    ws_dma_copy_words(MEM_COLOR_PALETTE(8), cards_palette, 32);
+{
+    if (ws_system_color_active())
+    {
+        ws_dma_copy_words(MEM_COLOR_PALETTE(BAIZE_PALETTE), baize_palette, 32);
+        ws_dma_copy_words(MEM_COLOR_PALETTE(CARDS_PALETTE), cards_palette, 32);
+        ws_dma_copy_words(MEM_COLOR_PALETTE(CHECKERBOARD_PALETTE), cards_palette, 32);
+    }
+    else
+    {
+        outportw(IO_SCR_PAL(BAIZE_PALETTE), MONO_PAL_COLORS(7, 6, 5, 4));
+        outportw(IO_SCR_PAL(CARDS_PALETTE), MONO_PAL_COLORS(1, 7, 3, 0));
+        outportw(IO_SCR_PAL(CHECKERBOARD_PALETTE), MONO_PAL_COLORS(7, 7, 3, 2));
+    }
 }
 
 void clear_card_layer()
 {
-    ws_screen_fill_tiles(SCREEN_2, 0, 0, 0, SCR_WIDTH, SCR_HEIGHT);
+    ws_screen_fill_tiles(SCREEN_2, SCR_ENTRY_PALETTE(CARDS_PALETTE), 0, 0, SCR_WIDTH, SCR_HEIGHT);
 }
 
 // draw the checkerboard background onto screen 1 page 2
@@ -122,7 +172,7 @@ void draw_checkerboard()
 	for (index = 0; index < SCR_WIDTH * SCR_HEIGHT; index++)
 	{
 		SCREEN_1_PAGE_2[index].tile = CHECKERBOARD_TILES + (index % 2) + (((index / 32) % 2) * 2);
-        SCREEN_1_PAGE_2[index].palette = 0;
+        SCREEN_1_PAGE_2[index].palette = CHECKERBOARD_PALETTE;
         SCREEN_1_PAGE_2[index].bank = 0;
         SCREEN_1_PAGE_2[index].flip_h = 0;
         SCREEN_1_PAGE_2[index].flip_v = 0;
@@ -137,7 +187,7 @@ void draw_baize()
 	for (index = 0; index < SCR_WIDTH * SCR_HEIGHT; index++)
 	{
 		SCREEN_1[index].tile = BAIZE_TILES + (index % 3) + (((index / 32) % 3) * 3);
-        SCREEN_1[index].palette = 1;
+        SCREEN_1[index].palette = BAIZE_PALETTE;
         SCREEN_1[index].bank = 0;
         SCREEN_1[index].flip_h = 0;
         SCREEN_1[index].flip_v = 0;
@@ -189,6 +239,7 @@ void draw_menu()
 	for (i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i++)
 	{
         SCREEN_2_PAGE_2[i].tile = menu_tilemap[i];
+        SCREEN_2_PAGE_2[i].palette = CARDS_PALETTE;
     }
 }
 
@@ -208,6 +259,7 @@ void set_up_you_win_sprites()
         SPRITES[i].tile = YOU_WIN_TILES + i;
         SPRITES[i].x = (10 + (i % 8)) << 3;
         SPRITES[i].y = (7 + (i / 8)) << 3;
+        SPRITES[i].palette = CARDS_PALETTE & 0x7;
         SPRITES[i].priority = 1;
         SPRITES[i].flip_v = 0;
         SPRITES[i].flip_h = 0;
@@ -248,9 +300,11 @@ void draw_cursor()
     // cursor position
     SPRITES[0].x = drawn_cursor_x + 20;
     SPRITES[0].y = drawn_cursor_y + 8 - camera_y;
+    SPRITES[0].palette = CARDS_PALETTE & 0x7;
 
     SPRITES[1].x = SPRITES[0].x;
     SPRITES[1].y = SPRITES[0].y + 8;
+    SPRITES[1].palette = CARDS_PALETTE & 0x7;
 
     // set up sprites for card which is being moved
     for (i = 0; i < card_in_hand_tiles_count; i++)
@@ -274,6 +328,7 @@ void copy_card_tiles_to_sprites(uint8_t x, uint8_t y)
 	for (i = 0; i < 4; i++)
 	{
 		card_in_hand_tiles[dest_offset].tile = SCREEN_2[source_offset].tile;
+		card_in_hand_tiles[dest_offset].palette = (CARDS_PALETTE & 0x7);
         card_in_hand_tiles[dest_offset].flip_h = SCREEN_2[source_offset].flip_h;
         card_in_hand_tiles[dest_offset].flip_v = SCREEN_2[source_offset].flip_v;
         card_in_hand_tiles[dest_offset].priority = 1;
@@ -281,6 +336,7 @@ void copy_card_tiles_to_sprites(uint8_t x, uint8_t y)
 		source_offset++;
 
 		card_in_hand_tiles[dest_offset].tile = SCREEN_2[source_offset].tile;
+		card_in_hand_tiles[dest_offset].palette = (CARDS_PALETTE & 0x7);
         card_in_hand_tiles[dest_offset].flip_h = SCREEN_2[source_offset].flip_h;
         card_in_hand_tiles[dest_offset].flip_v = SCREEN_2[source_offset].flip_v;
         card_in_hand_tiles[dest_offset].priority = 1;
@@ -288,6 +344,7 @@ void copy_card_tiles_to_sprites(uint8_t x, uint8_t y)
 		source_offset++;
 
 		card_in_hand_tiles[dest_offset].tile = SCREEN_2[source_offset].tile;
+		card_in_hand_tiles[dest_offset].palette = (CARDS_PALETTE & 0x7);
         card_in_hand_tiles[dest_offset].flip_h = SCREEN_2[source_offset].flip_h;
         card_in_hand_tiles[dest_offset].flip_v = SCREEN_2[source_offset].flip_v;
         card_in_hand_tiles[dest_offset].priority = 1;
@@ -328,17 +385,17 @@ void draw_card_tiles(uint8_t card, uint8_t x, uint8_t y, uint8_t full_card)
 	SCREEN_2[offset].tile = 0x54;
     SCREEN_2[offset].flip_h = 0;
     SCREEN_2[offset].flip_v = 0;
-    SCREEN_2[offset].palette = 4;
+    SCREEN_2[offset].palette = CARDS_PALETTE;
 
     SCREEN_2[offset + 1].tile = 0x50 + suit;
     SCREEN_2[offset + 1].flip_h = 0;
     SCREEN_2[offset + 1].flip_v = 0;
-    SCREEN_2[offset + 1].palette = 4;
+    SCREEN_2[offset + 1].palette = CARDS_PALETTE;
 
 	SCREEN_2[offset + 2].tile = 0x60 + value;
     SCREEN_2[offset + 2].flip_h = 0;
     SCREEN_2[offset + 2].flip_v = 0;
-    SCREEN_2[offset + 2].palette = 4;
+    SCREEN_2[offset + 2].palette = CARDS_PALETTE;
 
 	offset += SCR_WIDTH;
 
@@ -363,19 +420,19 @@ void draw_card_tiles(uint8_t card, uint8_t x, uint8_t y, uint8_t full_card)
 			SCREEN_2[offset].tile = card_body;
             SCREEN_2[offset].flip_h = 0;
             SCREEN_2[offset].flip_v = 0;
-            SCREEN_2[offset].palette = 4;
+            SCREEN_2[offset].palette = CARDS_PALETTE;
 			card_body++;
 
 			SCREEN_2[offset + 1].tile = card_body;
             SCREEN_2[offset + 1].flip_h = 0;
             SCREEN_2[offset + 1].flip_v = 0;
-            SCREEN_2[offset + 1].palette = 4;
+            SCREEN_2[offset + 1].palette = CARDS_PALETTE;
 			card_body++;
 
 			SCREEN_2[offset + 2].tile = card_body;
             SCREEN_2[offset + 2].flip_h = 0;
             SCREEN_2[offset + 2].flip_v = 0;
-            SCREEN_2[offset + 2].palette = 4;
+            SCREEN_2[offset + 2].palette = CARDS_PALETTE;
 			card_body++;
 
 			offset += SCR_WIDTH;
@@ -385,17 +442,17 @@ void draw_card_tiles(uint8_t card, uint8_t x, uint8_t y, uint8_t full_card)
 		SCREEN_2[offset].tile = 0x70 + value;
         SCREEN_2[offset].flip_h = 1;
         SCREEN_2[offset].flip_v = 1;
-        SCREEN_2[offset].palette = 4;
+        SCREEN_2[offset].palette = CARDS_PALETTE;
 
 		SCREEN_2[offset + 1].tile = 0x50 + suit;
         SCREEN_2[offset + 1].flip_h = 1;
         SCREEN_2[offset + 1].flip_v = 1;
-        SCREEN_2[offset + 1].palette = 4;
+        SCREEN_2[offset + 1].palette = CARDS_PALETTE;
 
 		SCREEN_2[offset + 2].tile = 0x57;
         SCREEN_2[offset + 2].flip_h = 0;
         SCREEN_2[offset + 2].flip_v = 0;
-        SCREEN_2[offset + 2].palette = 4;
+        SCREEN_2[offset + 2].palette = CARDS_PALETTE;
 	}
 
 }
