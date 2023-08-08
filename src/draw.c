@@ -10,23 +10,11 @@
 #include "draw.h"
 #include "card.h"
 
-#include "cards_tiles_bin.h"
-#include "cards_palette_bin.h"
-#include "cards_mono_tiles_bin.h"
-
-#include "baize_tiles_bin.h"
-#include "baize_palette_bin.h"
-#include "baize_mono_tiles_bin.h"
-
-#include "text_tiles_lzsa2_bin.h"
-#include "text_mono_tiles_lzsa2_bin.h"
-
-#include "you_win_tiles_lzsa2_bin.h"
-#include "you_win_mono_tiles_lzsa2_bin.h"
-
-#include "title_screen_map_bin.h"
-#include "title_screen_tiles_lzsa2_bin.h"
-#include "title_screen_mono_tiles_lzsa2_bin.h"
+#include "graphics/baize.h"
+#include "graphics/cards.h"
+#include "graphics/text.h"
+#include "graphics/title_screen.h"
+#include "graphics/you_win.h"
 
 #include "menu_tilemap_bin.h"
 
@@ -96,49 +84,49 @@ void show_game_screen()
 void copy_checkerboard_gfx()
 {
 	if (ws_system_color_active())
-		ws_dma_copy_words(MEM_TILE_4BPP(0), cards_tiles, 0x10 * TILE_4BPP_LENGTH);
+		ws_dma_copy_words(MEM_TILE_4BPP(0), gfx_cards_tiles, 0x10 * TILE_4BPP_LENGTH);
 	else
-		memcpy(MEM_TILE(0), cards_mono_tiles, 0x10 * TILE_LENGTH);
+		memcpy(MEM_TILE(0), gfx_cards_mono_tiles, 0x10 * TILE_LENGTH);
 }
 
 void copy_title_screen_gfx()
 {
 	if (ws_system_color_active())
-		wsx_lzsa2_decompress(MEM_TILE_4BPP(16), title_screen_tiles_lzsa2);
+		wsx_lzsa2_decompress(MEM_TILE_4BPP(16), gfx_title_screen_tiles);
 	else
-		wsx_lzsa2_decompress(MEM_TILE(16), title_screen_mono_tiles_lzsa2);
+		wsx_lzsa2_decompress(MEM_TILE(16), gfx_title_screen_mono_tiles);
 }
 
 void copy_text_gfx()
 {
 	if (ws_system_color_active())
-		wsx_lzsa2_decompress(MEM_TILE_4BPP(160), text_tiles_lzsa2);
+		wsx_lzsa2_decompress(MEM_TILE_4BPP(160), gfx_text_tiles);
 	else
-		wsx_lzsa2_decompress(MEM_TILE(160), text_tiles_lzsa2);
+		wsx_lzsa2_decompress(MEM_TILE(160), gfx_text_mono_tiles);
 }
 
 void copy_card_tile_gfx()
 {
 	if (ws_system_color_active())
-		ws_dma_copy_words(MEM_TILE_4BPP(0), cards_tiles, 160 * TILE_4BPP_LENGTH);
+		ws_dma_copy_words(MEM_TILE_4BPP(0), gfx_cards_tiles, 160 * TILE_4BPP_LENGTH);
 	else
-		memcpy(MEM_TILE(0), cards_mono_tiles, 160 * TILE_LENGTH);
+		memcpy(MEM_TILE(0), gfx_cards_mono_tiles, 160 * TILE_LENGTH);
 }
 
 void copy_you_win_gfx()
 {
 	if (ws_system_color_active())
-		wsx_lzsa2_decompress(MEM_TILE_4BPP(YOU_WIN_TILES), you_win_tiles_lzsa2);
+		wsx_lzsa2_decompress(MEM_TILE_4BPP(YOU_WIN_TILES), gfx_you_win_tiles);
 	else
-		wsx_lzsa2_decompress(MEM_TILE(YOU_WIN_TILES), you_win_mono_tiles_lzsa2);
+		wsx_lzsa2_decompress(MEM_TILE(YOU_WIN_TILES), gfx_you_win_mono_tiles);
 }
 
 void copy_baize_gfx()
 {
 	if (ws_system_color_active())
-		ws_dma_copy_words(MEM_TILE_4BPP(BAIZE_TILES), baize_tiles, 9 * TILE_4BPP_LENGTH);
+		ws_dma_copy_words(MEM_TILE_4BPP(BAIZE_TILES), gfx_baize_tiles, 9 * TILE_4BPP_LENGTH);
 	else
-		memcpy(MEM_TILE(BAIZE_TILES), baize_mono_tiles, 9 * TILE_LENGTH);
+		memcpy(MEM_TILE(BAIZE_TILES), gfx_baize_mono_tiles, 9 * TILE_LENGTH);
 }
 
 
@@ -147,9 +135,9 @@ void copy_palettes()
 {
     if (ws_system_color_active())
     {
-        ws_dma_copy_words(MEM_COLOR_PALETTE(BAIZE_PALETTE), baize_palette, 32);
-        ws_dma_copy_words(MEM_COLOR_PALETTE(CARDS_PALETTE), cards_palette, 32);
-        ws_dma_copy_words(MEM_COLOR_PALETTE(CHECKERBOARD_PALETTE), cards_palette, 32);
+        ws_dma_copy_words(MEM_COLOR_PALETTE(BAIZE_PALETTE), gfx_baize_palette, 32);
+        ws_dma_copy_words(MEM_COLOR_PALETTE(CARDS_PALETTE), gfx_cards_palette, 32);
+        ws_dma_copy_words(MEM_COLOR_PALETTE(CHECKERBOARD_PALETTE), gfx_cards_palette, 32);
     }
     else
     {
@@ -228,7 +216,7 @@ void draw_empty_foundations()
 
 void draw_title_screen()
 {
-    ws_screen_put_tiles(SCREEN_2, title_screen_map, 0, 0, 28, 18);
+    ws_screen_put_tiles(SCREEN_2, gfx_title_screen_map, 0, 0, 28, 18);
 }
 
 // draw menu into an offscreen page which will be swapped out for SCREEN_2

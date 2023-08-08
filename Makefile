@@ -16,7 +16,8 @@ NAME		:= wondercell
 
 INCLUDEDIRS	:= include
 SOURCEDIRS	:= src
-CBINDIRS	:= cbin
+ASSETDIRS	:= assets
+DATADIRS	:= data
 
 # Defines passed to all files
 # ---------------------------
@@ -49,9 +50,13 @@ endif
 # Source files
 # ------------
 
-ifneq ($(CBINDIRS),)
-    SOURCES_CBIN	:= $(shell find -L $(CBINDIRS) -name "*.bin")
-    INCLUDEDIRS		+= $(addprefix $(BUILDDIR)/,$(CBINDIRS))
+ifneq ($(ASSETDIRS),)
+    SOURCES_WFPROCESS	:= $(shell find -L $(ASSETDIRS) -name "*.lua")
+    INCLUDEDIRS		+= $(addprefix $(BUILDDIR)/,$(ASSETDIRS))
+endif
+ifneq ($(DATADIRS),)
+    SOURCES_BIN		:= $(shell find -L $(DATADIRS) -name "*.bin")
+    INCLUDEDIRS		+= $(addprefix $(BUILDDIR)/,$(DATADIRS))
 endif
 SOURCES_S	:= $(shell find -L $(SOURCEDIRS) -name "*.s")
 SOURCES_C	:= $(shell find -L $(SOURCEDIRS) -name "*.c")
@@ -78,9 +83,8 @@ LDFLAGS		:= $(LIBDIRSFLAGS) -Wl,-Map,$(MAP) -Wl,--gc-sections \
 # Intermediate build files
 # ------------------------
 
-OBJS_ASSETS	:= $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_CBIN)))
-
-HEADERS_ASSETS	:= $(patsubst %.bin,%_bin.h,$(addprefix $(BUILDDIR)/,$(SOURCES_CBIN)))
+OBJS_ASSETS	:= $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_BIN))) \
+		   $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_WFPROCESS)))
 
 OBJS_SOURCES	:= $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_S))) \
 		   $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_C)))
@@ -122,6 +126,12 @@ $(BUILDDIR)/%.bin.o : %.bin
 	@$(MKDIR) -p $(@D)
 	$(_V)$(WF)/bin/wf-bin2c -a 2 --address-space __far $(@D) $<
 	$(_V)$(CC) $(CFLAGS) -MMD -MP -c -o $(BUILDDIR)/$*.bin.o $(BUILDDIR)/$*_bin.c
+
+$(BUILDDIR)/%.lua.o : %.lua
+	@echo "  PROCESS $<"
+	@$(MKDIR) -p $(@D)
+	$(_V)$(WF)/bin/wf-process -o $(BUILDDIR)/$*.c -t $(TARGET) -D $<
+	$(_V)$(CC) $(CFLAGS) -MMD -MP -c -o $(BUILDDIR)/$*.lua.o $(BUILDDIR)/$*.c
 
 # Include dependency files if they exist
 # --------------------------------------
