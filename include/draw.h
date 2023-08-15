@@ -20,7 +20,7 @@
 
 #define SPRITES ((ws_sprite_t __wf_iram*) 0x2e00)
 
-uint8_t camera_y;
+extern uint8_t camera_y;
 
 void init_video();
 

@@ -18,6 +18,7 @@
 
 #include "menu_tilemap_bin.h"
 
+uint8_t camera_y;
 static uint8_t drawn_cursor_x;
 static uint16_t drawn_cursor_y;
 

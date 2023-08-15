@@ -21,6 +21,11 @@
 #include "title_screen_cvgm_bin.h"
 #include "you_win_cvgm_bin.h"
 
+__attribute__((section(".iramx_EC0")))
+uint8_t _waveram[0x40];
+__attribute__((section(".iramx_1000")))
+uint8_t _tiles[0x3000];
+
 extern void vblank_int_handler(void);
 
 enum game_states {
@@ -29,7 +34,7 @@ enum game_states {
   GAME_MENU,
   GAME_TITLE,
   GAME_WON
-}; 
+};
 
 uint8_t tics;
 
