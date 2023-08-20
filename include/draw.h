@@ -13,13 +13,6 @@
 #define BAIZE_TILES 0x7
 #define CHECKERBOARD_TILES 0x1
 
-#define SCREEN_1 ((ws_scr_entry_t __wf_iram*) 0x1000)
-#define SCREEN_1_PAGE_2 ((ws_scr_entry_t __wf_iram*) 0x1800)
-#define SCREEN_2 ((ws_scr_entry_t __wf_iram*) 0x3000)
-#define SCREEN_2_PAGE_2 ((ws_scr_entry_t __wf_iram*) 0x3800)
-
-#define SPRITES ((ws_sprite_t __wf_iram*) 0x2e00)
-
 extern uint8_t camera_y;
 
 void init_video();

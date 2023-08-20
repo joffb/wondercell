@@ -104,7 +104,7 @@ all: $(ROM)
 
 $(ROM) $(ELF): $(ELF_STAGE1)
 	@echo "  ROM     $@"
-	$(_V)$(BUILDROM) -o $(ROM) --output-elf $(ELF) $(BUILDROMFLAGS) $<
+	$(_V)$(BUILDROM) -v -o $(ROM) --output-elf $(ELF) $(BUILDROMFLAGS) $<
 
 $(ELF_STAGE1): $(OBJS)
 	@echo "  LD      $@"
@@ -136,7 +136,7 @@ $(BUILDDIR)/%.bin.o : %.bin
 $(BUILDDIR)/%.lua.o : %.lua
 	@echo "  PROCESS $<"
 	@$(MKDIR) -p $(@D)
-	$(_V)$(WF)/bin/wf-process -o $(BUILDDIR)/$*.c -t $(TARGET) -D $<
+	$(_V)$(WF)/bin/wf-process -o $(BUILDDIR)/$*.c -t $(TARGET) --depfile $(BUILDDIR)/$*.lua.d --depfile-target $(BUILDDIR)/$*.lua.o $<
 	$(_V)$(CC) $(CFLAGS) -MMD -MP -c -o $(BUILDDIR)/$*.lua.o $(BUILDDIR)/$*.c
 
 # Include dependency files if they exist
