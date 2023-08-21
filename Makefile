@@ -117,12 +117,12 @@ clean:
 # Rules
 # -----
 
-$(BUILDDIR)/%.s.o : %.s
+$(BUILDDIR)/%.s.o : %.s | $(OBJS_ASSETS)
 	@echo "  AS      $<"
 	@$(MKDIR) -p $(@D)
 	$(_V)$(CC) $(ASFLAGS) -MMD -MP -c -o $@ $<
 
-$(BUILDDIR)/%.c.o : %.c
+$(BUILDDIR)/%.c.o : %.c | $(OBJS_ASSETS)
 	@echo "  CC      $<"
 	@$(MKDIR) -p $(@D)
 	$(_V)$(CC) $(CFLAGS) -MMD -MP -c -o $@ $<
