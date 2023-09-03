@@ -116,8 +116,8 @@ uint16_t vgmswan_play(vgmswan_state_t *state) {
                     uint32_t source = *((uint16_t __far*) ptr) + state->start_offset + (FP_SEG(ptr) << 4);
                     outportw(IO_SDMA_SOURCE_L, source); ptr += 2;
                     outportb(IO_SDMA_SOURCE_H, source >> 16);
-                    outportw(IO_SDMA_COUNTER_L, *((uint16_t __far*) ptr)); ptr += 2;
-                    outportb(IO_SDMA_COUNTER_H, 0);
+                    outportw(IO_SDMA_LENGTH_L, *((uint16_t __far*) ptr)); ptr += 2;
+                    outportb(IO_SDMA_LENGTH_H, 0);
                     outportb(IO_SDMA_CTRL, ctrl);
                 }
             } break;
