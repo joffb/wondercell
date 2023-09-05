@@ -8,9 +8,6 @@
 
 #ifdef __WONDERFUL_WWITCH__
 #include <sys/bios.h>
-#else
-// see wfconfig.toml
-#define WAVE_RAM ((uint8_t __wf_iram*) 0xEC0)
 #endif
 
 #include "card.h"
@@ -21,6 +18,9 @@
 #include "title_screen_cvgm_bin.h"
 #include "you_win_cvgm_bin.h"
 
+#define IRAM_IMPLEMENTATION
+#include "iram.h"
+
 extern void vblank_int_handler(void);
 
 enum game_states {
@@ -29,7 +29,7 @@ enum game_states {
   GAME_MENU,
   GAME_TITLE,
   GAME_WON
-}; 
+};
 
 uint8_t tics;
 
@@ -103,7 +103,7 @@ void new_game()
 	initialise_deck();
 	shuffle_deck();
 
-	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2));
+	outportb(IO_SCR_BASE, SCR1_BASE(screen_1) | SCR2_BASE(screen_2));
 
 	// default cursor to first cascade
 	cursor_area = AREA_CASCADES;
@@ -111,13 +111,13 @@ void new_game()
 	reset_drawn_cursor();
 
 	// setup cursor sprites
-	SPRITES[0].tile = CURSOR_TILES;
-	SPRITES[0].palette = 0;
-	SPRITES[0].priority = 1;
+	sprites[0].tile = CURSOR_TILES;
+	sprites[0].palette = 0;
+	sprites[0].priority = 1;
 
-	SPRITES[1].tile = CURSOR_TILES + 1;
-	SPRITES[1].palette = 0;
-	SPRITES[1].priority = 1;
+	sprites[1].tile = CURSOR_TILES + 1;
+	sprites[1].palette = 0;
+	sprites[1].priority = 1;
 
 	show_game_screen();
 
@@ -187,14 +187,14 @@ void main()
 	// setup music driver
 	music_ticks = VGMSWAN_PLAYBACK_FINISHED;
 #ifndef __WONDERFUL_WWITCH__
-	outportb(IO_SND_WAVE_BASE, SND_WAVE_BASE(WAVE_RAM));
+	outportb(IO_SND_WAVE_BASE, SND_WAVE_BASE(&wave_ram));
 #endif
 
 	// initial game state
 	game_state = GAME_TITLE;
 
 	// show title screen
-	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1_PAGE_2) | SCR2_BASE(SCREEN_2));
+	outportb(IO_SCR_BASE, SCR1_BASE(screen_1_page_2) | SCR2_BASE(screen_2));
 	show_title_screen();
 
 	// initial background music
@@ -255,7 +255,7 @@ void main()
 				outportb(IO_SCR1_SCRL_X, 0);
 				outportb(IO_SCR1_SCRL_Y, 0);
 
-				// draw menu into an offscreen page for SCREEN_2
+				// draw menu into an offscreen page for screen_2
 				draw_menu();
 
 				// set up new game
@@ -365,8 +365,8 @@ void main()
 				// Back
 				if (menu_cursor == 2)
 				{
-					// change SCREEN_2 base address back to the card screen map
-					outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2));
+					// change screen_2 base address back to the card screen map
+					outportb(IO_SCR_BASE, SCR1_BASE(screen_1) | SCR2_BASE(screen_2));
 
 					game_state = GAME_INGAME;
 				}
@@ -395,18 +395,18 @@ void main()
 				outportb(IO_SCR1_SCRL_X, 0);
 				outportb(IO_SCR1_SCRL_Y, 0);
 				
-				// change SCREEN_2 base address to the card screen map
-				outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1) | SCR2_BASE(SCREEN_2));
+				// change screen_2 base address to the card screen map
+				outportb(IO_SCR_BASE, SCR1_BASE(screen_1) | SCR2_BASE(screen_2));
 
 				game_state = GAME_INGAME;
 			}
 
 			// cursor position
-			SPRITES[0].x = 152;
-			SPRITES[0].y = 50 + (menu_cursor << 4);
+			sprites[0].x = 152;
+			sprites[0].y = 50 + (menu_cursor << 4);
 
-			SPRITES[1].x = SPRITES[0].x;
-			SPRITES[1].y = SPRITES[0].y + 8;
+			sprites[1].x = sprites[0].x;
+			sprites[1].y = sprites[0].y + 8;
 		}
 
 		// ingame
@@ -539,9 +539,9 @@ void main()
 			// start button opens the menu
 			if (keypad_pushed & KEY_START)
 			{
-				// change SCREEN_2 base address to the menu screen map
+				// change screen_2 base address to the menu screen map
 				outportb(IO_SPR_COUNT, 2);
-				outportb(IO_SCR_BASE, SCR1_BASE(SCREEN_1_PAGE_2) | SCR2_BASE(SCREEN_2_PAGE_2));
+				outportb(IO_SCR_BASE, SCR1_BASE(screen_1_page_2) | SCR2_BASE(screen_2_page_2));
 				
 				// reset screen 1 scroll
 				outportb(IO_SCR1_SCRL_X, 0);

@@ -16,7 +16,8 @@ NAME		:= wondercell
 
 INCLUDEDIRS	:= include
 SOURCEDIRS	:= src
-CBINDIRS	:= cbin
+ASSETDIRS	:= assets
+DATADIRS	:= data
 
 # Defines passed to all files
 # ---------------------------
@@ -34,7 +35,7 @@ LIBDIRS		:= $(WF_TARGET_DIR)
 
 BUILDDIR	:= build/wswan
 ELF		:= build/wswan/$(NAME).elf
-MAP		:= build/wswan/$(NAME).map
+ELF_STAGE1	:= build/wswan/$(NAME)_stage1.elf
 ROM		:= $(NAME).wsc
 
 # Verbose flag
@@ -49,9 +50,13 @@ endif
 # Source files
 # ------------
 
-ifneq ($(CBINDIRS),)
-    SOURCES_CBIN	:= $(shell find -L $(CBINDIRS) -name "*.bin")
-    INCLUDEDIRS		+= $(addprefix $(BUILDDIR)/,$(CBINDIRS))
+ifneq ($(ASSETDIRS),)
+    SOURCES_WFPROCESS	:= $(shell find -L $(ASSETDIRS) -name "*.lua")
+    INCLUDEDIRS		+= $(addprefix $(BUILDDIR)/,$(ASSETDIRS))
+endif
+ifneq ($(DATADIRS),)
+    SOURCES_BIN		:= $(shell find -L $(DATADIRS) -name "*.bin")
+    INCLUDEDIRS		+= $(addprefix $(BUILDDIR)/,$(DATADIRS))
 endif
 SOURCES_S	:= $(shell find -L $(SOURCEDIRS) -name "*.s")
 SOURCES_C	:= $(shell find -L $(SOURCEDIRS) -name "*.c")
@@ -67,20 +72,21 @@ INCLUDEFLAGS	:= $(foreach path,$(INCLUDEDIRS),-I$(path)) \
 LIBDIRSFLAGS	:= $(foreach path,$(LIBDIRS),-L$(path)/lib)
 
 ASFLAGS		+= -x assembler-with-cpp $(DEFINES) $(WF_ARCH_CFLAGS) \
-		   $(INCLUDEFLAGS) -ffunction-sections
+		   $(INCLUDEFLAGS) -ffunction-sections -fdata-sections -fno-common
 
 CFLAGS		+= -std=gnu11 $(WARNFLAGS) $(DEFINES) $(WF_ARCH_CFLAGS) \
-		   $(INCLUDEFLAGS) -ffunction-sections -O2
+		   $(INCLUDEFLAGS) -ffunction-sections -fdata-sections -fno-common -O2 -g
 
-LDFLAGS		:= $(LIBDIRSFLAGS) -Wl,-Map,$(MAP) -Wl,--gc-sections \
+LDFLAGS		:= -T$(WF_LDSCRIPT) $(LIBDIRSFLAGS) -fno-common \
 		   $(WF_ARCH_LDFLAGS) $(LIBS)
+
+BUILDROMFLAGS	:=
 
 # Intermediate build files
 # ------------------------
 
-OBJS_ASSETS	:= $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_CBIN)))
-
-HEADERS_ASSETS	:= $(patsubst %.bin,%_bin.h,$(addprefix $(BUILDDIR)/,$(SOURCES_CBIN)))
+OBJS_ASSETS	:= $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_BIN))) \
+		   $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_WFPROCESS)))
 
 OBJS_SOURCES	:= $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_S))) \
 		   $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_C)))
@@ -96,9 +102,13 @@ DEPS		:= $(OBJS:.o=.d)
 
 all: $(ROM)
 
-$(ROM) $(ELF): $(OBJS)
-	@echo "  ROMLINK $@"
-	$(_V)$(ROMLINK) -v -o $@ --output-elf $(ELF) -- $(OBJS) $(WF_CRT0) $(LDFLAGS)
+$(ROM) $(ELF): $(ELF_STAGE1)
+	@echo "  ROM     $@"
+	$(_V)$(BUILDROM) -v -o $(ROM) --output-elf $(ELF) $(BUILDROMFLAGS) $<
+
+$(ELF_STAGE1): $(OBJS)
+	@echo "  LD      $@"
+	$(_V)$(CC) -r -o $(ELF_STAGE1) $(OBJS) $(WF_CRT0) $(LDFLAGS)
 
 clean:
 	@echo "  CLEAN"
@@ -107,12 +117,12 @@ clean:
 # Rules
 # -----
 
-$(BUILDDIR)/%.s.o : %.s
+$(BUILDDIR)/%.s.o : %.s | $(OBJS_ASSETS)
 	@echo "  AS      $<"
 	@$(MKDIR) -p $(@D)
 	$(_V)$(CC) $(ASFLAGS) -MMD -MP -c -o $@ $<
 
-$(BUILDDIR)/%.c.o : %.c
+$(BUILDDIR)/%.c.o : %.c | $(OBJS_ASSETS)
 	@echo "  CC      $<"
 	@$(MKDIR) -p $(@D)
 	$(_V)$(CC) $(CFLAGS) -MMD -MP -c -o $@ $<
@@ -122,6 +132,12 @@ $(BUILDDIR)/%.bin.o : %.bin
 	@$(MKDIR) -p $(@D)
 	$(_V)$(WF)/bin/wf-bin2c -a 2 --address-space __far $(@D) $<
 	$(_V)$(CC) $(CFLAGS) -MMD -MP -c -o $(BUILDDIR)/$*.bin.o $(BUILDDIR)/$*_bin.c
+
+$(BUILDDIR)/%.lua.o : %.lua
+	@echo "  PROCESS $<"
+	@$(MKDIR) -p $(@D)
+	$(_V)$(WF)/bin/wf-process -o $(BUILDDIR)/$*.c -t $(TARGET) --depfile $(BUILDDIR)/$*.lua.d --depfile-target $(BUILDDIR)/$*.lua.o $<
+	$(_V)$(CC) $(CFLAGS) -MMD -MP -c -o $(BUILDDIR)/$*.lua.o $(BUILDDIR)/$*.c
 
 # Include dependency files if they exist
 # --------------------------------------
