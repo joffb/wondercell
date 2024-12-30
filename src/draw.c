@@ -23,6 +23,10 @@ uint8_t camera_y;
 static uint8_t drawn_cursor_x;
 static uint16_t drawn_cursor_y;
 
+#ifdef __WONDERFUL_WWITCH__
+#define ws_dma_copy_words memcpy
+#endif
+
 // #define FORCE_MONO
 
 void init_video()
