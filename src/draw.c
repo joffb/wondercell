@@ -24,7 +24,7 @@ static uint8_t drawn_cursor_x;
 static uint16_t drawn_cursor_y;
 
 #ifdef __WONDERFUL_WWITCH__
-#define ws_gdma_copyp memcpy
+#define ws_gdma_copy memcpy
 #endif
 
 // #define FORCE_MONO
@@ -90,7 +90,7 @@ void show_game_screen()
 void copy_checkerboard_gfx()
 {
 	if (ws_system_is_color_active())
-		ws_gdma_copyp(WS_TILE_4BPP_MEM(0), gfx_cards_tiles, 0x10 * WS_DISPLAY_TILE_SIZE_4BPP);
+		ws_gdma_copy(WS_TILE_4BPP_MEM(0), gfx_cards_tiles, 0x10 * WS_DISPLAY_TILE_SIZE_4BPP);
 	else
 		memcpy(WS_TILE_MEM(0), gfx_cards_mono_tiles, 0x10 * WS_DISPLAY_TILE_SIZE);
 }
@@ -114,7 +114,7 @@ void copy_text_gfx()
 void copy_card_tile_gfx()
 {
 	if (ws_system_is_color_active())
-		ws_gdma_copyp(WS_TILE_4BPP_MEM(0), gfx_cards_tiles, 160 * WS_DISPLAY_TILE_SIZE_4BPP);
+		ws_gdma_copy(WS_TILE_4BPP_MEM(0), gfx_cards_tiles, 160 * WS_DISPLAY_TILE_SIZE_4BPP);
 	else
 		memcpy(WS_TILE_MEM(0), gfx_cards_mono_tiles, 160 * WS_DISPLAY_TILE_SIZE);
 }
@@ -130,7 +130,7 @@ void copy_you_win_gfx()
 void copy_baize_gfx()
 {
 	if (ws_system_is_color_active())
-		ws_gdma_copyp(WS_TILE_4BPP_MEM(BAIZE_TILES), gfx_baize_tiles, 9 * WS_DISPLAY_TILE_SIZE_4BPP);
+		ws_gdma_copy(WS_TILE_4BPP_MEM(BAIZE_TILES), gfx_baize_tiles, 9 * WS_DISPLAY_TILE_SIZE_4BPP);
 	else
 		memcpy(WS_TILE_MEM(BAIZE_TILES), gfx_baize_mono_tiles, 9 * WS_DISPLAY_TILE_SIZE);
 }
@@ -141,9 +141,9 @@ void copy_palettes()
 {
     if (ws_system_is_color_active())
     {
-        ws_gdma_copyp(WS_DISPLAY_COLOR_MEM(BAIZE_PALETTE), gfx_baize_palette, 32);
-        ws_gdma_copyp(WS_DISPLAY_COLOR_MEM(CARDS_PALETTE), gfx_cards_palette, 32);
-        ws_gdma_copyp(WS_DISPLAY_COLOR_MEM(CHECKERBOARD_PALETTE), gfx_cards_palette, 32);
+        ws_gdma_copy(WS_DISPLAY_COLOR_MEM(BAIZE_PALETTE), gfx_baize_palette, 32);
+        ws_gdma_copy(WS_DISPLAY_COLOR_MEM(CARDS_PALETTE), gfx_cards_palette, 32);
+        ws_gdma_copy(WS_DISPLAY_COLOR_MEM(CHECKERBOARD_PALETTE), gfx_cards_palette, 32);
     }
     else
     {
