@@ -42,9 +42,9 @@ void vgmswan_init(vgmswan_state_t *state, const void __far* pointer) {
 
 #ifdef __WONDERFUL_WWITCH__
     sound_init();
-    sound_set_output(SND_OUT_HEADPHONES_ENABLE | SND_OUT_SPEAKER_ENABLE | SND_OUT_VOLUME_12_5);
+    sound_set_output(WS_SOUND_OUT_CTRL_HEADPHONE_ENABLE | WS_SOUND_OUT_CTRL_SPEAKER_ENABLE | WS_SOUND_OUT_CTRL_SPEAKER_VOLUME_100);
 #else
-    outportb(IO_SND_OUT_CTRL, SND_OUT_HEADPHONES_ENABLE | SND_OUT_SPEAKER_ENABLE | SND_OUT_VOLUME_12_5);
+    outportb(WS_SOUND_OUT_CTRL_PORT, WS_SOUND_OUT_CTRL_HEADPHONE_ENABLE | WS_SOUND_OUT_CTRL_SPEAKER_ENABLE | WS_SOUND_OUT_CTRL_SPEAKER_VOLUME_100);
 #endif
 }
 
@@ -52,7 +52,7 @@ uint16_t vgmswan_play(vgmswan_state_t *state) {
     const uint8_t __far* ptr = state->ptr;
 
 #ifndef __WONDERFUL_WWITCH__
-    uint16_t addrPrefix = (inportb(IO_SND_WAVE_BASE) << 6);
+    uint16_t addrPrefix = (inportb(WS_SOUND_WAVE_BASE_PORT) << 6);
 #endif
     uint16_t result = 0;
     bool restorePtr = true;
@@ -110,15 +110,15 @@ uint16_t vgmswan_play(vgmswan_state_t *state) {
             } break;
             case 0xFB: {
                 uint8_t ctrl = *(ptr++);
-                outportb(IO_SDMA_CTRL, 0);
+                outportb(WS_SDMA_CTRL_PORT, 0);
                 if (ctrl & 0x80) {
                     // play sample
                     uint32_t source = *((uint16_t __far*) ptr) + state->start_offset + (FP_SEG(ptr) << 4);
-                    outportw(IO_SDMA_SOURCE_L, source); ptr += 2;
-                    outportb(IO_SDMA_SOURCE_H, source >> 16);
-                    outportw(IO_SDMA_LENGTH_L, *((uint16_t __far*) ptr)); ptr += 2;
-                    outportb(IO_SDMA_LENGTH_H, 0);
-                    outportb(IO_SDMA_CTRL, ctrl);
+                    outportw(WS_SDMA_SOURCE_L_PORT, source); ptr += 2;
+                    outportb(WS_SDMA_SOURCE_H_PORT, source >> 16);
+                    outportw(WS_SDMA_LENGTH_L_PORT, *((uint16_t __far*) ptr)); ptr += 2;
+                    outportb(WS_SDMA_LENGTH_H_PORT, 0);
+                    outportb(WS_SDMA_CTRL_PORT, ctrl);
                 }
             } break;
             case 0xFC:

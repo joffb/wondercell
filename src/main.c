@@ -56,10 +56,10 @@ void disable_interrupts()
 {
 #ifndef __WONDERFUL_WWITCH__
 	// disable cpu interrupts
-	cpu_irq_disable();
+	ia16_disable_irq();
 
 	// disable wonderswan hardware interrupts
-	ws_hwint_disable_all();
+	ws_int_disable_all();
 #endif
 }
 
@@ -67,16 +67,16 @@ void enable_interrupts()
 {
 #ifndef __WONDERFUL_WWITCH__
 	// acknowledge interrupt
-	outportb(IO_HWINT_ACK, 0xFF);
+	outportb(WS_INT_ACK_PORT, 0xFF);
 
 	// set interrupt handler which only acknowledges the vblank interrupt
-	ws_hwint_set_default_handler_vblank();
+	ws_int_set_default_handler_vblank();
 
 	// enable wonderswan vblank interrupt
-	ws_hwint_enable(HWINT_VBLANK);
+	ws_int_enable(WS_INT_ENABLE_VBLANK);
 
 	// enable cpu interrupts
-	cpu_irq_enable();
+	ia16_enable_irq();
 #endif
 }
 
@@ -103,7 +103,7 @@ void new_game()
 	initialise_deck();
 	shuffle_deck();
 
-	outportb(IO_SCR_BASE, SCR1_BASE(screen_1) | SCR2_BASE(screen_2));
+	outportb(WS_SCR_BASE_PORT, WS_SCR_BASE_ADDR1(screen_1) | WS_SCR_BASE_ADDR2(screen_2));
 
 	// default cursor to first cascade
 	cursor_area = AREA_CASCADES;
@@ -111,13 +111,8 @@ void new_game()
 	reset_drawn_cursor();
 
 	// setup cursor sprites
-	sprites[0].tile = CURSOR_TILES;
-	sprites[0].palette = 0;
-	sprites[0].priority = 1;
-
-	sprites[1].tile = CURSOR_TILES + 1;
-	sprites[1].palette = 0;
-	sprites[1].priority = 1;
+	sprites[0].attr = (CURSOR_TILES) | WS_SPRITE_ATTR_PRIORITY | WS_SPRITE_ATTR_PALETTE(CARDS_PALETTE);
+	sprites[1].attr = (CURSOR_TILES + 1) | WS_SPRITE_ATTR_PRIORITY | WS_SPRITE_ATTR_PALETTE(CARDS_PALETTE);
 
 	show_game_screen();
 
@@ -139,7 +134,7 @@ void wait_for_vblank()
 	// halt cpu
 	// the program will sit here until the vblank interrupt
 	// is triggered and unhalts it
-	cpu_halt();
+	ia16_halt();
 #endif
 
 	// play music
@@ -187,14 +182,14 @@ void main()
 	// setup music driver
 	music_ticks = VGMSWAN_PLAYBACK_FINISHED;
 #ifndef __WONDERFUL_WWITCH__
-	outportb(IO_SND_WAVE_BASE, SND_WAVE_BASE(&wave_ram));
+	outportb(WS_SOUND_WAVE_BASE_PORT, WS_SOUND_WAVE_BASE_ADDR(&wave_ram));
 #endif
 
 	// initial game state
 	game_state = GAME_TITLE;
 
 	// show title screen
-	outportb(IO_SCR_BASE, SCR1_BASE(screen_1_page_2) | SCR2_BASE(screen_2));
+	outportb(WS_SCR_BASE_PORT, WS_SCR_BASE_ADDR1(screen_1_page_2) | WS_SCR_BASE_ADDR2(screen_2));
 	show_title_screen();
 
 	// initial background music
@@ -226,15 +221,15 @@ void main()
 		if (game_state == GAME_TITLE)
 		{
 			// hide sprites
-			outportb(IO_SPR_COUNT, 0);
+			outportb(WS_SPR_COUNT_PORT, 0);
 
 			// update checkerboard scrolling
 			if (tics % 4 == 0)
 			{
 				checker_scroll_x++;
 				checker_scroll_y++;
-				outportb(IO_SCR1_SCRL_X, checker_scroll_x);
-				outportb(IO_SCR1_SCRL_Y, checker_scroll_y);				
+				outportb(WS_SCR1_SCRL_X_PORT, checker_scroll_x);
+				outportb(WS_SCR1_SCRL_Y_PORT, checker_scroll_y);				
 			}
 
 			tics++;
@@ -252,8 +247,8 @@ void main()
 				copy_baize_gfx();
 
 				// reset screen 1 scroll
-				outportb(IO_SCR1_SCRL_X, 0);
-				outportb(IO_SCR1_SCRL_Y, 0);
+				outportb(WS_SCR1_SCRL_X_PORT, 0);
+				outportb(WS_SCR1_SCRL_Y_PORT, 0);
 
 				// draw menu into an offscreen page for screen_2
 				draw_menu();
@@ -294,7 +289,7 @@ void main()
 		else if (game_state == GAME_DEALING)
 		{
 			// hide sprites
-			outportb(IO_SPR_COUNT, 0);
+			outportb(WS_SPR_COUNT_PORT, 0);
 
 			// still have cards to deal
 			if (deck_count > 0)
@@ -334,14 +329,14 @@ void main()
 			{
 				checker_scroll_x++;
 				checker_scroll_y++;
-				outportb(IO_SCR1_SCRL_X, checker_scroll_x);
-				outportb(IO_SCR1_SCRL_Y, checker_scroll_y);				
+				outportb(WS_SCR1_SCRL_X_PORT, checker_scroll_x);
+				outportb(WS_SCR1_SCRL_Y_PORT, checker_scroll_y);				
 			}
 
 			tics++;
 
 			// cursor up
-			if (keypad_pushed & KEY_X1)
+			if (keypad_pushed & WS_KEY_X1)
 			{
 				menu_cursor = (menu_cursor - 1);
 
@@ -351,22 +346,22 @@ void main()
 				}
 			}
 			// cursor down
-			else if (keypad_pushed & KEY_X3)
+			else if (keypad_pushed & WS_KEY_X3)
 			{
 				menu_cursor = (menu_cursor + 1) % 3;
 			}
 
-			if (keypad_pushed & KEY_A)
+			if (keypad_pushed & WS_KEY_A)
 			{
 				// reset screen 1 scroll
-				outportb(IO_SCR1_SCRL_X, 0);
-				outportb(IO_SCR1_SCRL_Y, 0);
+				outportb(WS_SCR1_SCRL_X_PORT, 0);
+				outportb(WS_SCR1_SCRL_Y_PORT, 0);
 
 				// Back
 				if (menu_cursor == 2)
 				{
 					// change screen_2 base address back to the card screen map
-					outportb(IO_SCR_BASE, SCR1_BASE(screen_1) | SCR2_BASE(screen_2));
+					outportb(WS_SCR_BASE_PORT, WS_SCR_BASE_ADDR1(screen_1) | WS_SCR_BASE_ADDR2(screen_2));
 
 					game_state = GAME_INGAME;
 				}
@@ -389,14 +384,14 @@ void main()
 					enable_interrupts();
 				}
 			}
-			else if ((keypad_pushed & KEY_START) || (keypad_pushed & KEY_B))
+			else if ((keypad_pushed & WS_KEY_START) || (keypad_pushed & WS_KEY_B))
 			{
 				// reset screen 1 scroll
-				outportb(IO_SCR1_SCRL_X, 0);
-				outportb(IO_SCR1_SCRL_Y, 0);
+				outportb(WS_SCR1_SCRL_X_PORT, 0);
+				outportb(WS_SCR1_SCRL_Y_PORT, 0);
 				
 				// change screen_2 base address to the card screen map
-				outportb(IO_SCR_BASE, SCR1_BASE(screen_1) | SCR2_BASE(screen_2));
+				outportb(WS_SCR_BASE_PORT, WS_SCR_BASE_ADDR1(screen_1) | WS_SCR_BASE_ADDR2(screen_2));
 
 				game_state = GAME_INGAME;
 			}
@@ -413,7 +408,7 @@ void main()
 		else if (game_state == GAME_INGAME)
 		{
 			// pick up or put down a card
-			if (keypad_pushed & KEY_A)
+			if (keypad_pushed & WS_KEY_A)
 			{				
 				// no card currently
 				if (card_in_hand == NO_CARD)
@@ -440,13 +435,13 @@ void main()
 			}
 
 			// return card to its source
-			else if (keypad_pushed & KEY_B && card_in_hand != NO_CARD)
+			else if (keypad_pushed & WS_KEY_B && card_in_hand != NO_CARD)
 			{
 				return_card();
 			}
 
 			// up/down
-			if (keypad_pushed & KEY_X1 || keypad_pushed & KEY_X3)
+			if (keypad_pushed & WS_KEY_X1 || keypad_pushed & WS_KEY_X3)
 			{
 				// moving up from the cascades
 				if (cursor_area == AREA_CASCADES)
@@ -479,15 +474,15 @@ void main()
 			}
 
 			// move cursor
-			if (keypad_pushed & KEY_X4 || keypad_pushed & KEY_X2)
+			if (keypad_pushed & WS_KEY_X4 || keypad_pushed & WS_KEY_X2)
 			{
 				// left
-				if (keypad_pushed & KEY_X4)
+				if (keypad_pushed & WS_KEY_X4)
 				{
 					cursor_x = cursor_x - 1;
 				}
 				// right
-				else if (keypad_pushed & KEY_X2)
+				else if (keypad_pushed & WS_KEY_X2)
 				{
 					cursor_x = cursor_x + 1;
 				}
@@ -537,15 +532,15 @@ void main()
 			}
 
 			// start button opens the menu
-			if (keypad_pushed & KEY_START)
+			if (keypad_pushed & WS_KEY_START)
 			{
 				// change screen_2 base address to the menu screen map
-				outportb(IO_SPR_COUNT, 2);
-				outportb(IO_SCR_BASE, SCR1_BASE(screen_1_page_2) | SCR2_BASE(screen_2_page_2));
+				outportb(WS_SPR_COUNT_PORT, 2);
+				outportb(WS_SCR_BASE_PORT, WS_SCR_BASE_ADDR1(screen_1_page_2) | WS_SCR_BASE_ADDR2(screen_2_page_2));
 				
 				// reset screen 1 scroll
-				outportb(IO_SCR1_SCRL_X, 0);
-				outportb(IO_SCR1_SCRL_Y, 0);
+				outportb(WS_SCR1_SCRL_X_PORT, 0);
+				outportb(WS_SCR1_SCRL_Y_PORT, 0);
 
 				checker_scroll_x = checker_scroll_y = 0;
 
@@ -560,8 +555,8 @@ void main()
 							? 0 
 							: (cursor_y - 9) * 8;
 
-				outportb(IO_SCR1_SCRL_Y, camera_y);
-				outportb(IO_SCR2_SCRL_Y, camera_y);
+				outportb(WS_SCR1_SCRL_Y_PORT, camera_y);
+				outportb(WS_SCR2_SCRL_Y_PORT, camera_y);
 
 				draw_cursor();
 			}
