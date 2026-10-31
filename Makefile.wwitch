@@ -20,6 +20,7 @@ INCLUDEDIRS	:= include
 SOURCEDIRS	:= src
 ASSETDIRS	:= assets
 DATADIRS	:= data
+ROM0FSDIRS	:= rom0
 
 # Defines passed to all files
 # ---------------------------
@@ -39,6 +40,7 @@ BUILDDIR	:= build/wwitch
 ELF		:= build/wwitch/$(NAME).elf
 MAP		:= build/wwitch/$(NAME).map
 EXECUTABLE	:= $(NAME).fx
+ROM		:= $(NAME)_fx.ws
 
 # Verbose flag
 # ------------
@@ -84,6 +86,7 @@ LDFLAGS		:= -T$(WF_LDSCRIPT) \
 		   $(WF_ARCH_LDFLAGS) $(LIBS)
 
 MKFENTFLAGS	:=
+MKROMFLAGS	:= --small
 
 ifdef INFO
 MKFENTFLAGS	+= --info $(INFO)
@@ -108,9 +111,13 @@ DEPS		:= $(OBJS:.o=.d)
 # Targets
 # -------
 
-.PHONY: all clean
+.PHONY: all clean usage
 
-all: $(EXECUTABLE)
+all: $(EXECUTABLE) $(ROM) compile_commands.json
+
+$(ROM): $(EXECUTABLE)
+	@echo "  MKROM   $@"
+	$(_V)$(MKROM) -v -o $@ $< $(ROM0FS_FILES) $(MKROMFLAGS)
 
 $(EXECUTABLE): $(ELF)
 	@echo "  MKFENT  $@"
@@ -123,6 +130,13 @@ $(ELF): $(OBJS)
 clean:
 	@echo "  CLEAN"
 	$(_V)$(RM) $(EXECUTABLE) $(BUILDDIR)
+
+usage: $(ELF)
+	$(_V)$(ROMUSAGE) $< -g
+
+compile_commands.json: $(OBJS) | Makefile
+	@echo "  MERGE   compile_commands.json"
+	$(_V)$(WF)/bin/wf-compile-commands-merge $@ $(patsubst %.o,%.cc.json,$^)
 
 # Rules
 # -----

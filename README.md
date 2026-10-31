@@ -21,7 +21,6 @@ Controls:
 
 With Wonderful Toolchain and the Wonderswan target installed you can build it by running
 ```
-./convert_gfx.sh
 make
 ```
 
